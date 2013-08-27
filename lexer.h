@@ -1,4 +1,3 @@
-
 #pragma once
 #include "common_header.h"
 #include "alphabet.h"
@@ -11,11 +10,9 @@ public:
 	std::vector<Token> tokenList;
 	std::stack<Token> storage;
 
-	bool successfullyRead;
-
 	void terminate(std::string message){
-			tokenList.push_back(Token(Token::END, message));
-			successfullyRead = false;
+//			tokenList.push_back(Token(Token::END, message));
+			throw ParserException(message);
 		}
 
 	struct BlockDetecter {
@@ -49,8 +46,9 @@ public:
 				}
 
 				if (previous.empty() && tabCount != 0){
-					parent->terminate("No match for this block!"); //How to make it?
-					//std::cerr << "No match for this block!\n";
+				        //parent->terminate("No match for this block!");
+				        //std::cerr << "No match for this block!\n";
+				        throw ParserException("No match for this block!");
 				}
 				else{
 					currentTabDepth = previous.top();
@@ -109,7 +107,7 @@ public:
 		if (currentChar == x)
 			consume ();
 		else
-			std::cerr << "Expected '" << x << "' got " << currentChar << "\n";
+			throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n");
 	}
 
 	void consumeWS(){
@@ -190,11 +188,9 @@ public:
 
 	Token getNextToken(){
 		while (currentChar != EOF){
-			if (isWhitespace(currentChar)){
-				consumeWS();
+			while (isWhitespace(currentChar)){
+				consume();
 			}
-			if (!successfullyRead)
-				break;
 
 			if (isNewline(currentChar)){
 
@@ -205,33 +201,26 @@ public:
 					
 				}
 				
-					if (blockDetecter.isNewBlock(tabCount)){
-						return Token(Token::BLOCK_BEGIN, "");
-					}
-					
-					if (get("end") || blockDetecter.isOldBlock(tabCount)){
-						return Token(Token::BLOCK_END, "");
-					}
+				if (blockDetecter.isNewBlock(tabCount)){
+				        return Token(Token::BLOCK_BEGIN, "");
+				}
+				
+				if (get("end") || blockDetecter.isOldBlock(tabCount)){
+				        return Token(Token::BLOCK_END, "");
+				}
 			}			
-			if (!successfullyRead)
-				break;
 
 			if (isTab(currentChar))
 				consumeTabs();
 
-			if (!successfullyRead)
-				break;
-
 			if (isLetter(currentChar))
 				return getName();
 
-			if (!successfullyRead)
-				break;
 			switch (currentChar) {
 				case '#' : return getComment();
-				case ',' : get(","); return Token(COMMA, "," );
-				case '.' : get("."); return Token(DOT, "." ); 
-				case ';' : get(";"); return Token(SEMICOLON, ";");
+			        case ',' : match(','); return Token(COMMA, "," );
+			        case '.' : match('.'); return Token(DOT, "." ); 
+			        case ';' : match(';'); return Token(SEMICOLON, ";");
 
 				case ':' : match(':'); 
 					if ( currentChar == '=' ) 
