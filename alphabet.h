@@ -2,12 +2,10 @@
 
 #include "common_header.h"
 
-
-
 class Alphabet {
 public:
 	bool isLetter(char c){
-		return ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_');
+	        return (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_');
 	}
 
 	bool isDigit(char c){
@@ -28,7 +26,7 @@ public:
 	} 
 
 	bool isEof(char c){
-		return c == EOF;
+	        return (c == EOF);
 	}
 
 	bool isSeparator (char c){
@@ -45,7 +43,7 @@ public:
 		isTrue = isTrue || (c == ';');
 		isTrue = isTrue || (c == '[' || c ==']');
 		isTrue = isTrue || (c == '+'|| c == '/' || c == '*' || c == '%' || c == '-');
-		isTrue = isTrue || (c == '&' || c == '|', c == '^' || c == '~' || c == '!');
+		isTrue = isTrue || (c == '&' || c == '|' || c == '^' || c == '~' || c == '!');
 		isTrue = isTrue || (c == ',' || c == '.');
 		isTrue = isTrue || (c == '<' || c == '>');
 		isTrue = isTrue || (c == '{' || c == '}');

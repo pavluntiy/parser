@@ -4,4 +4,6 @@
 #include <fstream>
 #include <stack>
 
+#include "parserexception.h"
+
 #define pass
