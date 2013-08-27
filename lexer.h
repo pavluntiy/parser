@@ -3,6 +3,13 @@
 #include "alphabet.h"
 #include "token.h"
 
+/*
+  TODO
+
+  1. Ничего из Token::TokenType здесь не в области видимости, надо пофиксить.
+  2. В alphabet довольно странные функции, и потом Token не является Alphabet => зачем наследование?
+  в алфавите по идее все должно быть статическим.
+ */
 
 class Lexer {
 public: 
@@ -11,7 +18,6 @@ public:
 	std::stack<Token> storage;
 
 	void terminate(std::string message){
-//			tokenList.push_back(Token(Token::END, message));
 			throw ParserException(message);
 		}
 
@@ -20,12 +26,12 @@ public:
 		int currentTabDepth; 
 		std::stack<int> previous;
 
-		Token freeBlocksStack(){
+
+		void freeBlocksStack(){	    //у тебя здесь возращаемый тип был Token, но ты ничего не возвращал и я его сменил его на void
 			while (!previous.empty()){			
 				previous.pop();
 				parent->tokenList.push_back(Token(Token::BLOCK_END));
 			}
-
 		}
 
 		bool isNewBlock(int tabCount){
@@ -77,15 +83,13 @@ public:
 	Token currentToken;
 	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
-		successfullyRead = true;
-
 	}
 
 
 	void consume (){
 		currentPosition++; 
 
-		if ( currentPosition >= input.length() )
+		if ( currentPosition >= (int)input.length() )
 			currentChar = EOF;
 		else
 			currentChar = input[currentPosition]; 
@@ -107,7 +111,7 @@ public:
 		if (currentChar == x)
 			consume ();
 		else
-			throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n");
+		    throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n"));
 	}
 
 	void consumeWS(){
@@ -159,7 +163,7 @@ public:
 		}
 
 		if (isBoolConstant(buffer)){
-			return Token(BOOL, bufer);
+			return Token(BOOL, buffer);
 		}
 
 		if (isEnd(buffer)){
@@ -167,10 +171,10 @@ public:
 		}
 
 		if (isKeyWord(buffer)){
-			return Token(KEYWORD, bufer);
+			return Token(KEYWORD, buffer);
 		}
 
-		return Token(NAME, bufer);
+		return Token(NAME, buffer);
 
 
 	}

@@ -56,16 +56,18 @@ public:
 		return (this->type != second.type);
 	}
 
-	void print(std::ofstream &out, const Token &currentToken ){
-		out << currentToken.typeToText << ", text: " << currentToken.getText() << '\n';
-	}
+	void print(std::ofstream &out, Token &currentToken);
 
 	std::string toString (){
 		return (this->typeToText() + ", text: " + this->getText() + '\n');
 	}
 };
 
-std::ostream& operator<< (std::ofstream &out, const Token &currentToken){
+std::ostream& operator<< (std::ofstream &out, Token &currentToken){
 	out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
 	return out;
 } 
+
+void Token::print(std::ofstream &out, Token &currentToken){
+        out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
+}
