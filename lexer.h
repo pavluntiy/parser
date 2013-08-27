@@ -5,7 +5,7 @@
 #include "token.h"
 
 
-class Lexer: public Token {
+class Lexer {
 public: 
 	std::string input;
 	std::vector<Token> tokenList;
@@ -23,8 +23,6 @@ public:
 		int currentTabDepth; 
 		std::stack<int> previous;
 
-		
-
 		Token freeBlocksStack(){
 			while (!previous.empty()){			
 				previous.pop();
@@ -32,6 +30,7 @@ public:
 			}
 
 		}
+
 		bool isNewBlock(int tabCount){
 			if (tabCount > currentTabDepth){
 				previous.push(currentTabDepth);
@@ -87,7 +86,11 @@ public:
 
 	void consume (){
 		currentPosition++; 
-		currentChar = input[currentPosition]; 
+
+		if ( currentPosition >= input.length() )
+			currentChar = EOF;
+		else
+			currentChar = input[currentPosition]; 
 	}
 
 	bool get (std::string text){
