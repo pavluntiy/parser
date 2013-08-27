@@ -106,7 +106,7 @@ public:
 		if (currentChar == x)
 			consume ();
 		else
-			std::cerr << "Expexted " <<  x <<  " got " << currentChar << "\n";
+			std::cerr << "Expected '" << x << "' got " << currentChar << "\n";
 	}
 
 	void consumeWS(){
@@ -133,39 +133,39 @@ public:
 		return counter;
 	}
 
-	bool isBoolConstant (std::string str){
+	bool isBoolConstant (const std::string& str){
 		if (str == "true" || str == "false")
 			return true;
 		return false;
 	}
 
-	bool isKeyWord (std::string str){
+	bool isKeyWord (const std::string& str){
 		if(str == "if" || str == "else" || str == "for")
 			return true;
 		return false;
 	}
 
-	bool isEnd (std::string str){
+	bool isEnd (const std::string& str){
 		return (str == "end");
 	}
 
 	Token getName () {
-		std::string bufer;
+		std::string buffer;
 
-		while(!isSeparator(currentChar) && !isSpecialSymbol(currentChar)){
-			bufer += currentChar;
+		while(isLetter(currentChar) || isDigit(currentChar) || currentChar == '_' ){
+			buffer += currentChar;
 			consume();
 		}
 
-		if (isBoolConstant(bufer)){
+		if (isBoolConstant(buffer)){
 			return Token(BOOL, bufer);
 		}
 
-		if (isEnd(bufer)){
+		if (isEnd(buffer)){
 			return Token(BLOCK_END);
 		}
 
-		if (isKeyWord(bufer)){
+		if (isKeyWord(buffer)){
 			return Token(KEYWORD, bufer);
 		}
 
@@ -184,42 +184,6 @@ public:
 		return Token (COMMENT, buf);
 
 	}
-
-	Token plusVariants(){
-		if (get("+="))
-			return Token(OPERATOR, "+=");
-
-		if (get("++"))
-			return Token (OPERATOR, "++");
-
-		if(get("+"))
-			return Token (OPERATOR, "+");
-
-	}
-
-	Token minusVariants(){
-		if (get("-="))
-			return Token(OPERATOR, "-=");
-
-		if (get("--"))
-			return Token (OPERATOR, "--");
-
-		if(get("-"))
-			return Token (OPERATOR, "-");
-
-	}
-
-	Token colonVariants(){
-		if (get(":=")){
-				return Token(ASSIGN, ":=");
-		}
-			else {
-				if (get(":"))
-						return Token(OPERATOR, ":");
-				terminate("What a trash!");
-			}
-	}
-	
 
 	Token getNextToken(){
 		while (currentChar != EOF){
@@ -258,17 +222,35 @@ public:
 			if (isLetter(currentChar))
 				return getName();
 
-
 			if (!successfullyRead)
 				break;
 			switch (currentChar) {
 				case '#' : return getComment();
-				case ',' : get(","); return  Token(COMMA, "," ); break;
-				case '.' : get("."); return  Token(DOT, "." ); break;
+				case ',' : get(","); return Token(COMMA, "," );
+				case '.' : get("."); return Token(DOT, "." ); 
 				case ';' : get(";"); return Token(SEMICOLON, ";");
-				case ':' : return colonVariants(); 
-				case '+' : return plusVariants();
-				case '-' : return minusVariants();	
+
+				case ':' : match(':'); 
+					if ( currentChar == '=' ) 
+						return Token(OPERATOR, ":="); 
+					else 
+						return Token(OPERATOR, ":");
+
+				case '+' : match('+'); 
+					if ( currentChar == '+' ) 
+						return Token(OPERATOR, "++"); 
+					else if ( currentChar == '=' )
+						return Token(OPERATOR, "+=");
+					else
+						return Token(OPERATOR, "+");
+
+				case '-' : match('-');
+					if ( currentChar == '-' )
+						return Token(OPERATOR, "--");
+					else if ( currentChar == '=' )
+						return Token(OPERATOR, "-=");
+					else
+						return Token(OPERATOR, "-");
 					
 				default: terminate("some trash");
 
@@ -293,7 +275,7 @@ public:
 	}
 
 
-	std::vector<Token> getTokenList(){
+	const std::vector<Token>& getTokenList(){
 		tokenize();
 		return this->tokenList;
 	}
