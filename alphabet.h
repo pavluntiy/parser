@@ -27,12 +27,22 @@ public:
 		return (c == '\t');
 	} 
 
+	bool isEof(char c){
+		return c == EOF;
+	}
+
+	bool isSeparator (char c){
+		return (isTab(c) || isNewline(c) || isWhitespace(c) || isEof(c));
+	}
+
 	bool isCommentSign (char c){
 		return (c == '#');
 	}
 	bool isSpecialSymbol (char c){
 		bool isTrue = false;
 
+
+		isTrue = isTrue || (c == ';');
 		isTrue = isTrue || (c == '[' || c ==']');
 		isTrue = isTrue || (c == '+'|| c == '/' || c == '*' || c == '%' || c == '-');
 		isTrue = isTrue || (c == '&' || c == '|', c == '^' || c == '~' || c == '!');

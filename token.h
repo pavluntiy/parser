@@ -4,7 +4,7 @@
 #pragma once
 class Token: public Alphabet { 
 public:
-	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, NAME, OPERATOR,COMMA, ASSIGN, DOT, INT, FLOAT, CHAR};
+	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, COMMENT, SEMICOLON, NAME, OPERATOR, KEYWORD, COMMA, ASSIGN, DOT, INT, FLOAT, CHAR, BOOL};
 
 protected:
 	TokenType type;
@@ -18,14 +18,18 @@ public:
 			case END: return "END";
 			case BLOCK_BEGIN: return "BLOCK_BEGIN";
 			case BLOCK_END: return "BLOCK_END";
+			case COMMENT: return "COMMENT";
+			case SEMICOLON: return "SEMICOLON";
 			case NAME: return "NAME";
 			case OPERATOR: return "OPERATOR";
+			case KEYWORD: return "KEYWORD";
 			case COMMA: return "COMMA";
 			case ASSIGN: return "ASSIGN";
 			case DOT: return "DOT";
 			case INT: return "INT";
 			case FLOAT: return "FLOAT";
 			case CHAR: return "CHAR";
+			case BOOL: return "BOOL";
 		}
 	}
 	std::string getText (){
@@ -40,7 +44,7 @@ public:
 	{
 
 	}
-	
+
 
 	bool operator == (const Token &second)
 	const{
@@ -61,6 +65,7 @@ public:
 	}
 };
 
+//WTF?! I was not able to compile next:
 /*std::ostream& operator<< (std::ofstream &out, const Token &currentToken){
 	out << currentToken.typeToText << ", text: " << currentToken.getText() << '\n';
 	return out;

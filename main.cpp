@@ -11,10 +11,8 @@ int main (){
 		input += in.get(); 
 	}
 
-	input += '\0';
 	Lexer lexer(input);
 
-	lexer.tokenize();
 	auto list = lexer.getTokenList();
 
 	for (auto c: list){

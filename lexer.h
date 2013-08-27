@@ -11,18 +11,24 @@ public:
 	std::vector<Token> tokenList;
 	std::stack<Token> storage;
 
+	bool successfullyRead;
+
+	void terminate(std::string message){
+			tokenList.push_back(Token(Token::END, message));
+			successfullyRead = false;
+		}
+
 	struct BlockDetecter {
-		std::vector<Token> *parentTokenList;
-		//Lexer &parent; I had an idea to keep a reference to my parent (lexer), in order to be able to 
-		//terminate tokeniztion in case of an error,
-		//but I didn't manage with circle references etc
+		Lexer *parent;
 		int currentTabDepth; 
 		std::stack<int> previous;
+
+		
 
 		Token freeBlocksStack(){
 			while (!previous.empty()){			
 				previous.pop();
-				parentTokenList->push_back(Token(Token::BLOCK_END));
+				parent->tokenList.push_back(Token(Token::BLOCK_END));
 			}
 
 		}
@@ -39,14 +45,13 @@ public:
 			if (tabCount < currentTabDepth){
 				
 				while (!previous.empty() && previous.top() != tabCount){
-					parentTokenList->push_back(Token(Token::BLOCK_END));
+					parent->tokenList.push_back(Token(Token::BLOCK_END));
 					previous.pop();
 				}
 
-				if (previous.empty() && tabCount != 0 || previous.top() != tabCount){
-					parentTokenList->push_back(Token(Token::BLOCK_END, "No match for this block!"));
-					//parent.terminate("No match for this block!"); //How to make it?
-					std::cerr << "No match for this block!\n";
+				if (previous.empty() && tabCount != 0){
+					parent->terminate("No match for this block!"); //How to make it?
+					//std::cerr << "No match for this block!\n";
 				}
 				else{
 					currentTabDepth = previous.top();
@@ -58,13 +63,8 @@ public:
 			return false;
 		}
 
-		/*BlockDetecter(Lexer parent){
+		BlockDetecter(Lexer *parent){
 			this->parent = parent;
-			this->currentTabDepth = 0;
-		}*/
-
-		BlockDetecter(std::vector<Token> *parentTokenList){
-			this->parentTokenList =  parentTokenList;
 			this->currentTabDepth = 0;
 		}
 
@@ -80,14 +80,26 @@ public:
 	Token currentToken;
 	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
+		successfullyRead = true;
 
 	}
 
 
 	void consume (){
-		currentPosition++;
-		//std::cout << currentPosition << ' '; 
+		currentPosition++; 
 		currentChar = input[currentPosition]; 
+	}
+
+	bool get (std::string text){
+		for (int i = 0; i < (int) text.size(); i++){
+			if (text[i] != input[currentPosition + i])
+				return false;
+		}
+
+		for (int i = 0; i < (int) text.size(); i++)
+			consume();
+
+		return true;
 	}
 
 	void match (char x){
@@ -121,70 +133,168 @@ public:
 		return counter;
 	}
 
+	bool isBoolConstant (std::string str){
+		if (str == "true" || str == "false")
+			return true;
+		return false;
+	}
+
+	bool isKeyWord (std::string str){
+		if(str == "if" || str == "else" || str == "for")
+			return true;
+		return false;
+	}
+
+	bool isEnd (std::string str){
+		return (str == "end");
+	}
+
+	Token getName () {
+		std::string bufer;
+
+		while(!isSeparator(currentChar) && !isSpecialSymbol(currentChar)){
+			bufer += currentChar;
+			consume();
+		}
+
+		if (isBoolConstant(bufer)){
+			return Token(BOOL, bufer);
+		}
+
+		if (isEnd(bufer)){
+			return Token(BLOCK_END);
+		}
+
+		if (isKeyWord(bufer)){
+			return Token(KEYWORD, bufer);
+		}
+
+		return Token(NAME, bufer);
+
+
+	}
+
+	Token getComment (){
+		std::string buf;
+		while (!isNewline(currentChar)){
+			buf += currentChar;
+			consume();
+		}
+		std::cout << buf;
+		return Token (COMMENT, buf);
+
+	}
+
+	Token plusVariants(){
+		if (get("+="))
+			return Token(OPERATOR, "+=");
+
+		if (get("++"))
+			return Token (OPERATOR, "++");
+
+		if(get("+"))
+			return Token (OPERATOR, "+");
+
+	}
+
+	Token minusVariants(){
+		if (get("-="))
+			return Token(OPERATOR, "-=");
+
+		if (get("--"))
+			return Token (OPERATOR, "--");
+
+		if(get("-"))
+			return Token (OPERATOR, "-");
+
+	}
+
+	Token colonVariants(){
+		if (get(":=")){
+				return Token(ASSIGN, ":=");
+		}
+			else {
+				if (get(":"))
+						return Token(OPERATOR, ":");
+				terminate("What a trash!");
+			}
+	}
 	
 
 	Token getNextToken(){
-		while (currentChar != (char) -1){
+		while (currentChar != EOF){
 			if (isWhitespace(currentChar)){
 				consumeWS();
 			}
+			if (!successfullyRead)
+				break;
 
 			if (isNewline(currentChar)){
+
 				int tabCount;
 				while (isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
+					
 				}
 				
-					std::cout << tabCount << '\n';
 					if (blockDetecter.isNewBlock(tabCount)){
 						return Token(Token::BLOCK_BEGIN, "");
-						//std::cout << "asdf";
 					}
 					
-					if (blockDetecter.isOldBlock(tabCount)){
+					if (get("end") || blockDetecter.isOldBlock(tabCount)){
 						return Token(Token::BLOCK_END, "");
 					}
-			}
-			
+			}			
+			if (!successfullyRead)
+				break;
 
 			if (isTab(currentChar))
 				consumeTabs();
 
+			if (!successfullyRead)
+				break;
+
+			if (isLetter(currentChar))
+				return getName();
 
 
-			;
+			if (!successfullyRead)
+				break;
 			switch (currentChar) {
-				case ',' : consume(); return  Token(COMMA, "," ); break;
-				case '.' : consume(); return  Token(DOT, "." ); break;
+				case '#' : return getComment();
+				case ',' : get(","); return  Token(COMMA, "," ); break;
+				case '.' : get("."); return  Token(DOT, "." ); break;
+				case ';' : get(";"); return Token(SEMICOLON, ";");
+				case ':' : return colonVariants(); 
+				case '+' : return plusVariants();
+				case '-' : return minusVariants();	
+					
+				default: terminate("some trash");
+
+
 			}
 		}
 		return Token (Token::END, "");
 
 	}
-	void terminate(std::string text){
-		currentToken = Token(END, text);
-	}
 
 	void tokenize (){
-		blockDetecter = BlockDetecter(& (this->tokenList)); /////////////////HELP!!!!
+		blockDetecter = BlockDetecter(this);
 		currentToken = Token(Token::BEGIN, "");
+		tokenList.push_back(currentToken);
 
 		do {
-			tokenList.push_back(currentToken);
 			currentToken = getNextToken();
-			std::cout << "eh\n";
+			tokenList.push_back(currentToken);
+
 		}
 		while (currentToken != Token(Token::END, ""));
-
-		blockDetecter.freeBlocksStack();
-		
-
-		tokenList.push_back(currentToken);
 	}
 
 
 	std::vector<Token> getTokenList(){
+		tokenize();
 		return this->tokenList;
 	}
 	
