@@ -1,21 +1,24 @@
-
 #pragma once
 #include "common_header.h"
 #include "alphabet.h"
 #include "token.h"
 
+/*
+  TODO
 
-class Lexer: public Token {
+  1. Ничего из Token::TokenType здесь не в области видимости, надо пофиксить.
+  2. В alphabet довольно странные функции, и потом Token не является Alphabet => зачем наследование?
+  в алфавите по идее все должно быть статическим.
+ */
+
+class Lexer {
 public: 
 	std::string input;
 	std::vector<Token> tokenList;
 	std::stack<Token> storage;
 
-	bool successfullyRead;
-
 	void terminate(std::string message){
-			tokenList.push_back(Token(Token::END, message));
-			successfullyRead = false;
+			throw ParserException(message);
 		}
 
 	struct BlockDetecter {
@@ -23,15 +26,14 @@ public:
 		int currentTabDepth; 
 		std::stack<int> previous;
 
-		
 
-		Token freeBlocksStack(){
+		void freeBlocksStack(){	    //у тебя здесь возращаемый тип был Token, но ты ничего не возвращал и я его сменил его на void
 			while (!previous.empty()){			
 				previous.pop();
 				parent->tokenList.push_back(Token(Token::BLOCK_END));
 			}
-
 		}
+
 		bool isNewBlock(int tabCount){
 			if (tabCount > currentTabDepth){
 				previous.push(currentTabDepth);
@@ -50,8 +52,9 @@ public:
 				}
 
 				if (previous.empty() && tabCount != 0){
-					parent->terminate("No match for this block!"); //How to make it?
-					//std::cerr << "No match for this block!\n";
+				        //parent->terminate("No match for this block!");
+				        //std::cerr << "No match for this block!\n";
+				        throw ParserException("No match for this block!");
 				}
 				else{
 					currentTabDepth = previous.top();
@@ -80,14 +83,16 @@ public:
 	Token currentToken;
 	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
-		successfullyRead = true;
-
 	}
 
 
 	void consume (){
 		currentPosition++; 
-		currentChar = input[currentPosition]; 
+
+		if ( currentPosition >= (int)input.length() )
+			currentChar = EOF;
+		else
+			currentChar = input[currentPosition]; 
 	}
 
 	bool get (std::string text){
@@ -106,7 +111,7 @@ public:
 		if (currentChar == x)
 			consume ();
 		else
-			std::cerr << "Expexted " <<  x <<  " got " << currentChar << "\n";
+		    throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n"));
 	}
 
 	void consumeWS(){
@@ -133,43 +138,43 @@ public:
 		return counter;
 	}
 
-	bool isBoolConstant (std::string str){
+	bool isBoolConstant (const std::string& str){
 		if (str == "true" || str == "false")
 			return true;
 		return false;
 	}
 
-	bool isKeyWord (std::string str){
+	bool isKeyWord (const std::string& str){
 		if(str == "if" || str == "else" || str == "for")
 			return true;
 		return false;
 	}
 
-	bool isEnd (std::string str){
+	bool isEnd (const std::string& str){
 		return (str == "end");
 	}
 
 	Token getName () {
-		std::string bufer;
+		std::string buffer;
 
-		while(!isSeparator(currentChar) && !isSpecialSymbol(currentChar)){
-			bufer += currentChar;
+		while(isLetter(currentChar) || isDigit(currentChar) || currentChar == '_' ){
+			buffer += currentChar;
 			consume();
 		}
 
-		if (isBoolConstant(bufer)){
-			return Token(BOOL, bufer);
+		if (isBoolConstant(buffer)){
+			return Token(BOOL, buffer);
 		}
 
-		if (isEnd(bufer)){
+		if (isEnd(buffer)){
 			return Token(BLOCK_END);
 		}
 
-		if (isKeyWord(bufer)){
-			return Token(KEYWORD, bufer);
+		if (isKeyWord(buffer)){
+			return Token(KEYWORD, buffer);
 		}
 
-		return Token(NAME, bufer);
+		return Token(NAME, buffer);
 
 
 	}
@@ -185,49 +190,11 @@ public:
 
 	}
 
-	Token plusVariants(){
-		if (get("+="))
-			return Token(OPERATOR, "+=");
-
-		if (get("++"))
-			return Token (OPERATOR, "++");
-
-		if(get("+"))
-			return Token (OPERATOR, "+");
-
-	}
-
-	Token minusVariants(){
-		if (get("-="))
-			return Token(OPERATOR, "-=");
-
-		if (get("--"))
-			return Token (OPERATOR, "--");
-
-		if(get("-"))
-			return Token (OPERATOR, "-");
-
-	}
-
-	Token colonVariants(){
-		if (get(":=")){
-				return Token(ASSIGN, ":=");
-		}
-			else {
-				if (get(":"))
-						return Token(OPERATOR, ":");
-				terminate("What a trash!");
-			}
-	}
-	
-
 	Token getNextToken(){
 		while (currentChar != EOF){
-			if (isWhitespace(currentChar)){
-				consumeWS();
+			while (isWhitespace(currentChar)){
+				consume();
 			}
-			if (!successfullyRead)
-				break;
 
 			if (isNewline(currentChar)){
 
@@ -238,37 +205,48 @@ public:
 					
 				}
 				
-					if (blockDetecter.isNewBlock(tabCount)){
-						return Token(Token::BLOCK_BEGIN, "");
-					}
-					
-					if (get("end") || blockDetecter.isOldBlock(tabCount)){
-						return Token(Token::BLOCK_END, "");
-					}
+				if (blockDetecter.isNewBlock(tabCount)){
+				        return Token(Token::BLOCK_BEGIN, "");
+				}
+				
+				if (get("end") || blockDetecter.isOldBlock(tabCount)){
+				        return Token(Token::BLOCK_END, "");
+				}
 			}			
-			if (!successfullyRead)
-				break;
 
 			if (isTab(currentChar))
 				consumeTabs();
 
-			if (!successfullyRead)
-				break;
-
 			if (isLetter(currentChar))
 				return getName();
 
-
-			if (!successfullyRead)
-				break;
 			switch (currentChar) {
 				case '#' : return getComment();
-				case ',' : get(","); return  Token(COMMA, "," ); break;
-				case '.' : get("."); return  Token(DOT, "." ); break;
-				case ';' : get(";"); return Token(SEMICOLON, ";");
-				case ':' : return colonVariants(); 
-				case '+' : return plusVariants();
-				case '-' : return minusVariants();	
+			        case ',' : match(','); return Token(COMMA, "," );
+			        case '.' : match('.'); return Token(DOT, "." ); 
+			        case ';' : match(';'); return Token(SEMICOLON, ";");
+
+				case ':' : match(':'); 
+					if ( currentChar == '=' ) 
+						return Token(OPERATOR, ":="); 
+					else 
+						return Token(OPERATOR, ":");
+
+				case '+' : match('+'); 
+					if ( currentChar == '+' ) 
+						return Token(OPERATOR, "++"); 
+					else if ( currentChar == '=' )
+						return Token(OPERATOR, "+=");
+					else
+						return Token(OPERATOR, "+");
+
+				case '-' : match('-');
+					if ( currentChar == '-' )
+						return Token(OPERATOR, "--");
+					else if ( currentChar == '=' )
+						return Token(OPERATOR, "-=");
+					else
+						return Token(OPERATOR, "-");
 					
 				default: terminate("some trash");
 
@@ -293,7 +271,7 @@ public:
 	}
 
 
-	std::vector<Token> getTokenList(){
+	const std::vector<Token>& getTokenList(){
 		tokenize();
 		return this->tokenList;
 	}
