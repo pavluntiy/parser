@@ -3,14 +3,6 @@
 #include "alphabet.h"
 #include "token.h"
 
-/*
-  TODO
-
-  1. Ничего из Token::TokenType здесь не в области видимости, надо пофиксить.
-  2. В alphabet довольно странные функции, и потом Token не является Alphabet => зачем наследование?
-  в алфавите по идее все должно быть статическим.
- */
-
 class Lexer {
 public: 
 	std::string input;
@@ -18,8 +10,8 @@ public:
 	std::stack<Token> storage;
 
 	void terminate(std::string message){
-			throw ParserException(message);
-		}
+		throw ParserException(message);
+	}
 
 	struct BlockDetecter {
 		Lexer *parent;
@@ -27,7 +19,7 @@ public:
 		std::stack<int> previous;
 
 
-		void freeBlocksStack(){	    //у тебя здесь возращаемый тип был Token, но ты ничего не возвращал и я его сменил его на void
+		void freeBlocksStack(){	
 			while (!previous.empty()){			
 				previous.pop();
 				parent->tokenList.push_back(Token(Token::BLOCK_END));
@@ -52,8 +44,6 @@ public:
 				}
 
 				if (previous.empty() && tabCount != 0){
-				        //parent->terminate("No match for this block!");
-				        //std::cerr << "No match for this block!\n";
 				        throw ParserException("No match for this block!");
 				}
 				else{
@@ -163,18 +153,18 @@ public:
 		}
 
 		if (isBoolConstant(buffer)){
-			return Token(BOOL, buffer);
+			return Token(TokenType::BOOL, buffer);
 		}
 
 		if (isEnd(buffer)){
-			return Token(BLOCK_END);
+			return Token(TokenType::BLOCK_END);
 		}
 
 		if (isKeyWord(buffer)){
-			return Token(KEYWORD, buffer);
+			return Token(TokenType::KEYWORD, buffer);
 		}
 
-		return Token(NAME, buffer);
+		return Token(TokenType::NAME, buffer);
 
 
 	}
@@ -186,7 +176,7 @@ public:
 			consume();
 		}
 		std::cout << buf;
-		return Token (COMMENT, buf);
+		return Token (TokenType::COMMENT, buf);
 
 	}
 
@@ -206,11 +196,11 @@ public:
 				}
 				
 				if (blockDetecter.isNewBlock(tabCount)){
-				        return Token(Token::BLOCK_BEGIN, "");
+				        return Token(TokenType::BLOCK_BEGIN, "");
 				}
 				
 				if (get("end") || blockDetecter.isOldBlock(tabCount)){
-				        return Token(Token::BLOCK_END, "");
+				        return Token(TokenType::BLOCK_END, "");
 				}
 			}			
 
@@ -222,44 +212,44 @@ public:
 
 			switch (currentChar) {
 				case '#' : return getComment();
-			        case ',' : match(','); return Token(COMMA, "," );
-			        case '.' : match('.'); return Token(DOT, "." ); 
-			        case ';' : match(';'); return Token(SEMICOLON, ";");
+			        case ',' : match(','); return Token(TokenType::COMMA, "," );
+			        case '.' : match('.'); return Token(TokenType::DOT, "." ); 
+			        case ';' : match(';'); return Token(TokenType::SEMICOLON, ";");
 
 				case ':' : match(':'); 
 					if ( currentChar == '=' ) 
-						return Token(OPERATOR, ":="); 
+						return Token(TokenType::OPERATOR, ":="); 
 					else 
-						return Token(OPERATOR, ":");
+						return Token(TokenType::OPERATOR, ":");
 
 				case '+' : match('+'); 
 					if ( currentChar == '+' ) 
-						return Token(OPERATOR, "++"); 
+						return Token(TokenType::OPERATOR, "++"); 
 					else if ( currentChar == '=' )
-						return Token(OPERATOR, "+=");
+						return Token(TokenType::OPERATOR, "+=");
 					else
-						return Token(OPERATOR, "+");
+						return Token(TokenType::OPERATOR, "+");
 
 				case '-' : match('-');
 					if ( currentChar == '-' )
-						return Token(OPERATOR, "--");
+						return Token(TokenType::OPERATOR, "--");
 					else if ( currentChar == '=' )
-						return Token(OPERATOR, "-=");
+						return Token(TokenType::OPERATOR, "-=");
 					else
-						return Token(OPERATOR, "-");
+						return Token(TokenType::OPERATOR, "-");
 					
 				default: terminate("some trash");
 
 
 			}
 		}
-		return Token (Token::END, "");
+		return Token (TokenType::END, "");
 
 	}
 
 	void tokenize (){
 		blockDetecter = BlockDetecter(this);
-		currentToken = Token(Token::BEGIN, "");
+		currentToken = Token(TokenType::BEGIN, "");
 		tokenList.push_back(currentToken);
 
 		do {
@@ -267,7 +257,7 @@ public:
 			tokenList.push_back(currentToken);
 
 		}
-		while (currentToken != Token(Token::END, ""));
+		while (currentToken != Token(TokenType::END, ""));
 	}
 
 
