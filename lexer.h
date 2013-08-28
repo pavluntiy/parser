@@ -97,18 +97,18 @@ public:
 	}
 
 	void consumeNewlines(){
-		while (isNewline(currentChar))
+		while (Alphabet::isNewline(currentChar))
 			consume();
 	}
 
 	void consumeTabs(){
-		while (isTab(currentChar))
+		while (Alphabet::isTab(currentChar))
 			consume();
 	}
 
 	int countAndConsumeTabs(){
 		int counter = 0;
-		while (isTab(currentChar)){
+		while (Alphabet::isTab(currentChar)){
 			consume();
 			++counter;
 		}
@@ -134,7 +134,7 @@ public:
 	Token getName () {
 		std::string buffer;
 
-		while(isLetter(currentChar) || isDigit(currentChar) || currentChar == '_' ){
+		while(Alphabet::isLetter(currentChar) || Alphabet::isDigit(currentChar) || currentChar == '_' ){
 			buffer += currentChar;
 			consume();
 		}
@@ -158,7 +158,7 @@ public:
 
 	Token getComment (){
 		std::string buf;
-		while (!isNewline(currentChar)){
+		while (!Alphabet::isNewline(currentChar)){
 			buf += currentChar;
 			consume();
 		}
@@ -167,13 +167,13 @@ public:
 
 	Token getNextToken(){
 		while (currentChar != EOF){
-			while (isWhitespace(currentChar)){
+			while (Alphabet::isWhitespace(currentChar)){
 				consume();
 			}
 
-			if (isNewline(currentChar)){
+			if (Alphabet::isNewline(currentChar)){
 				int tabCount;
-				while (isNewline(currentChar)){
+				while (Alphabet::isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
 				}	
@@ -187,10 +187,10 @@ public:
 				}
 			}			
 
-			if (isTab(currentChar))
+			if (Alphabet::isTab(currentChar))
 				consumeTabs();
 
-			if (isLetter(currentChar))
+			if (Alphabet::isLetter(currentChar))
 				return getName();
 
 			switch (currentChar) {
@@ -231,7 +231,6 @@ public:
 	}
 
 	void tokenize (){
-		blockDetecter = BlockDetecter(this);
 		currentToken = Token(TokenType::BEGIN, "");
 		tokenList.push_back(currentToken);
 
