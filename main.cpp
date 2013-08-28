@@ -15,8 +15,8 @@ int main (){
 
 	try {
 		auto list = lexer.getTokenList();
-		for (auto c: list){
-			out << c.toString();
+		for (auto currentToken: list){
+			out << currentToken;
 		}
 
 	}
