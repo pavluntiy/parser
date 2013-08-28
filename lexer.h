@@ -216,8 +216,12 @@ public:
 		bool zeroFound = false;
 		bool numericDetected = false;
 
+<<<<<<< HEAD
 		if (currentChar == '0'){
 			zeroFound = true;
+=======
+		while(Alphabet::isLetter(currentChar) || Alphabet::isDigit(currentChar) || currentChar == '_' ){
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 			buffer += currentChar;
 			numericDetected = true;
 			consume();
@@ -279,16 +283,30 @@ public:
 					consume();							
 		}
 
+<<<<<<< HEAD
 		if (numericDetected){
 			if (isFloat){
 				return Token(Token::FLOAT, buffer);
 			}
 			return Token(Token::INT, buffer);
+=======
+	Token getComment (){
+		std::string buf;
+		while (!Alphabet::isNewline(currentChar)){
+			buf += currentChar;
+			consume();
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 		}
 		else return Token(Token::NONE);		
 	}
+<<<<<<< HEAD
 	
 	Token getSystemTokens (){
+=======
+
+	Token getNextToken(){
+		while (currentChar != EOF){
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 			while (Alphabet::isWhitespace(currentChar)){
 				consume();
 			}
@@ -318,15 +336,23 @@ public:
 				}
 			}
 
+<<<<<<< HEAD
 			if (Alphabet::isTab(currentChar)){
+=======
+			if (Alphabet::isTab(currentChar))
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 				consumeTabs();
 			}
 
+<<<<<<< HEAD
 			if (get("/*")){
 				return getMultyLineComment();
 			}
 
 			if (Alphabet::isLetter(currentChar)){
+=======
+			if (Alphabet::isLetter(currentChar))
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 				return getName();
 			}
 
@@ -626,7 +652,11 @@ public:
 	}
 
 	void tokenize (){
+<<<<<<< HEAD
 		currentToken = Token(Token::BEGIN, "");
+=======
+		currentToken = Token(TokenType::BEGIN, "");
+>>>>>>> 7595de36625bbe107d0799aefc4c22af4d87f27d
 		tokenList.push_back(currentToken);
 
 		do {
