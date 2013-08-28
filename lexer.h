@@ -12,10 +12,14 @@
  */
 
 class Lexer {
-public: 
+
+protected:
 	std::string input;
 	std::vector<Token> tokenList;
 	std::stack<Token> storage;
+	int currentPosition;
+	char currentChar;
+	Token currentToken;
 
 	void terminate(std::string message){
 			throw ParserException(message);
@@ -27,7 +31,7 @@ public:
 		std::stack<int> previous;
 
 
-		void freeBlocksStack(){	    //у тебя здесь возращаемый тип был Token, но ты ничего не возвращал и я его сменил его на void
+		void freeBlocksStack(){
 			while (!previous.empty()){			
 				previous.pop();
 				parent->tokenList.push_back(Token(Token::BLOCK_END));
@@ -78,12 +82,7 @@ public:
 	} blockDetecter;
 	
 
-	int currentPosition;
-	char currentChar;
-	Token currentToken;
-	Lexer (std::string input): input(input), currentPosition(0){
-		currentChar = input[currentPosition];
-	}
+
 
 
 	void consume (){
@@ -115,143 +114,270 @@ public:
 	}
 
 	void consumeWS(){
-		while (isWhitespace(currentChar))
+		while (Alphabet::isWhitespace(currentChar))
 			consume();
 	}
 
 	void consumeNewlines(){
-		while (isNewline(currentChar))
+		while (Alphabet::isNewline(currentChar))
 			consume();
 	}
 
 	void consumeTabs(){
-		while (isTab(currentChar))
+		while (Alphabet::isTab(currentChar))
 			consume();
 	}
 
 	int countAndConsumeTabs(){
 		int counter = 0;
-		while (isTab(currentChar)){
+		while (Alphabet::isTab(currentChar)){
 			consume();
 			counter++;
 		}
 		return counter;
 	}
 
-	bool isBoolConstant (const std::string& str){
-		if (str == "true" || str == "false")
-			return true;
-		return false;
-	}
-
-	bool isKeyWord (const std::string& str){
-		if(str == "if" || str == "else" || str == "for")
-			return true;
-		return false;
-	}
-
-	bool isEnd (const std::string& str){
-		return (str == "end");
-	}
+	
 
 	Token getName () {
 		std::string buffer;
 
-		while(isLetter(currentChar) || isDigit(currentChar) || currentChar == '_' ){
+		while(Alphabet::isLetter(currentChar) || Alphabet::isDigit(currentChar)){
 			buffer += currentChar;
 			consume();
 		}
 
-		if (isBoolConstant(buffer)){
-			return Token(BOOL, buffer);
+		if (Alphabet::isBoolConstant(buffer)){
+			return Token(Token::BOOL, buffer);
 		}
 
-		if (isEnd(buffer)){
-			return Token(BLOCK_END);
+		if (Alphabet::isEnd(buffer)){
+			return Token(Token::BLOCK_END);
 		}
 
-		if (isKeyWord(buffer)){
-			return Token(KEYWORD, buffer);
+		if (Alphabet::isKeyWord(buffer)){
+			return Token(Token::KEYWORD, buffer);
 		}
 
-		return Token(NAME, buffer);
+		return Token(Token::NAME, buffer);
 
 
 	}
 
+	bool tryComment (){
+		return Alphabet::isCommentBegin(std::string("") + currentChar) 
+			|| Alphabet::isCommentBegin(std::string("") + currentChar + input[currentPosition + (currentPosition < (int) input.size() - 1) ? 1 : 0]); 
+	}
 	Token getComment (){
-		std::string buf;
-		while (!isNewline(currentChar)){
-			buf += currentChar;
+		std::string buffer;
+		while (!Alphabet::isNewline(currentChar)){
+			buffer += currentChar;
 			consume();
 		}
-		std::cout << buf;
-		return Token (COMMENT, buf);
-
+		return Token(Token::COMMENT, buffer);
+	}
+	
+	Token getMultyLineComment () {
+		std::string buffer;
+		while ((!Alphabet::isEof(currentChar) && !get("*/"))){
+			buffer += currentChar;
+			consume();
+		}
+		return Token(Token::COMMENT, buffer);
 	}
 
-	Token getNextToken(){
-		while (currentChar != EOF){
-			while (isWhitespace(currentChar)){
+	Token getSystemTokens (){
+			while (Alphabet::isWhitespace(currentChar)){
 				consume();
 			}
 
-			if (isNewline(currentChar)){
+			if (Alphabet::isNewline(currentChar)){
+
 
 				int tabCount;
-				while (isNewline(currentChar)){
+				while (Alphabet::isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
 					
 				}
 				
-				if (blockDetecter.isNewBlock(tabCount)){
+				if (!tryComment() && blockDetecter.isNewBlock(tabCount)){
 				        return Token(Token::BLOCK_BEGIN, "");
 				}
 				
-				if (get("end") || blockDetecter.isOldBlock(tabCount)){
+				if (!tryComment() && (get("end") || blockDetecter.isOldBlock(tabCount))){
 				        return Token(Token::BLOCK_END, "");
 				}
 			}			
 
-			if (isTab(currentChar))
+			if (Alphabet::isTab(currentChar))
 				consumeTabs();
 
-			if (isLetter(currentChar))
+			if (Alphabet::isLetter(currentChar))
 				return getName();
 
-			switch (currentChar) {
-				case '#' : return getComment();
-			        case ',' : match(','); return Token(COMMA, "," );
-			        case '.' : match('.'); return Token(DOT, "." ); 
-			        case ';' : match(';'); return Token(SEMICOLON, ";");
+			if (get("/*"))
+					return getMultyLineComment();
+
+
+			return Token(Token::NONE);
+
+	}
+
+	Token getSymbolicTokens(){
+
+		switch (currentChar) {
+					case '#' : return getComment();
+			        case ',' : match(','); return Token(Token::COMMA, "," );
+			       
+			        case ';' : match(';'); return Token(Token::SEMICOLON, ";");
+
+			        case '.' : match('.'); 
+			        if (currentChar == '.'){
+			         	match ('.');
+			         	if (currentChar == '.'){
+			         		match('.');
+			         		return Token(Token::OPERATOR, "...");
+			         	}
+			         	else {
+			         		return Token(Token::OPERATOR, "..");
+			         	}
+			        }
+			        else {
+			         	return Token(Token::DOT, "." ); 
+			     	}
 
 				case ':' : match(':'); 
-					if ( currentChar == '=' ) 
-						return Token(OPERATOR, ":="); 
-					else 
-						return Token(OPERATOR, ":");
+					if ( currentChar == '=' ) {
+						match('=');
+						return Token(Token::OPERATOR, ":="); 
+					}
+					else if (currentChar == ':'){
+						match(':');
+						if (currentChar == '='){
+							return Token(Token::OPERATOR, "::=");
+						}
+						else {
+							return Token(Token::OPERATOR, "::");
+						}
+					}
+					else {
+						return Token(Token::OPERATOR, ":");
+					}
+					
 
 				case '+' : match('+'); 
-					if ( currentChar == '+' ) 
-						return Token(OPERATOR, "++"); 
-					else if ( currentChar == '=' )
-						return Token(OPERATOR, "+=");
-					else
-						return Token(OPERATOR, "+");
+					if ( currentChar == '+' ){
+						match('+');
+						return Token(Token::OPERATOR, "++"); 
+					}
+					else if ( currentChar == '=' ){
+						match('=');
+						return Token(Token::OPERATOR, "+=");
+					}
+					else {
+						return Token(Token::OPERATOR, "+");
+					}
 
 				case '-' : match('-');
-					if ( currentChar == '-' )
-						return Token(OPERATOR, "--");
-					else if ( currentChar == '=' )
-						return Token(OPERATOR, "-=");
-					else
-						return Token(OPERATOR, "-");
+					if (currentChar == '>'){
+						return Token(Token::OPERATOR, "->");
+					}
+					else if (currentChar == '-' ){
+						match('-');
+						if (currentChar == '>'){
+							return Token(Token::OPERATOR, "-->");
+						}
+						else {
+							return Token(Token::OPERATOR, "--");
+						}
+					}
+					else if ( currentChar == '=' ){
+						match('=');
+						return Token(Token::OPERATOR, "-=");
+					}
+					else {
+						return Token(Token::OPERATOR, "-");
+					}
 					
-				default: terminate("some trash");
 
+					case '=': match('=');
+					if (currentChar == '='){
+						match('=');
+						return Token(Token::OPERATOR, "==");
+					}
+					else {
+						return Token(Token::OPERATOR, "=");
+					}
+
+					case '<':match('<');
+					if (currentChar == '='){
+						match('=');
+						return Token(Token::OPERATOR, "<=");
+					}
+					else if (currentChar == '<'){
+						match('<');
+						return Token(Token::OPERATOR, "<<");
+					}
+					else {
+						return Token(Token::OPERATOR, "<");
+
+					}
+
+					case '>':match('>');
+					if (currentChar == '='){
+						match('=');
+						return Token(Token::OPERATOR, ">=");
+					}
+					else if (currentChar == '>'){
+						match('>');
+						if (currentChar == '>'){
+							match('>');
+							return Token(Token::OPERATOR, ">>>");
+						}
+						else {
+							return Token(Token::OPERATOR, ">>");
+						}
+					}
+					else {
+						return Token(Token::OPERATOR, ">");
+
+					}
+					case EOF: return Token (Token::END, "");
+
+				default: 
+					if (Alphabet::isSpecialSymbol(currentChar)){
+						char c = currentChar; 
+						consume();
+						return Token(Token::OPERATOR, std::string("") + c);
+					}
+					else{
+						std::cout << (int) currentChar;
+						throw ParserException(std::string("Unknown character ") + currentChar + "\n");
+					}
 
 			}
+
+			return Token(Token::NONE);
+
+	}
+
+	Token getNextToken(){
+		while (currentChar != EOF){
+		
+
+			currentToken = getSystemTokens();
+			if (currentToken != Token(Token::NONE)){
+				return currentToken;
+			}
+
+			currentToken = getSymbolicTokens();
+			if (currentToken != Token(Token::NONE)){
+				return currentToken;
+			}
+
+
+			
 		}
 		return Token (Token::END, "");
 
@@ -270,6 +396,12 @@ public:
 		while (currentToken != Token(Token::END, ""));
 	}
 
+public: 
+
+
+	Lexer (std::string input): input(input), currentPosition(0){
+		currentChar = input[currentPosition];
+	}
 
 	const std::vector<Token>& getTokenList(){
 		tokenize();

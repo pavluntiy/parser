@@ -1,10 +1,12 @@
 #include "common_header.h"
-#include "alphabet.h"
 
 #pragma once
 class Token: public Alphabet { 
 public:
-	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, COMMENT, SEMICOLON, NAME, OPERATOR, KEYWORD, COMMA, ASSIGN, DOT, INT, FLOAT, CHAR, BOOL};
+	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, 
+					BLOCK_END, COMMENT, SEMICOLON, 
+					NAME, OPERATOR, KEYWORD, COMMA, 
+					ASSIGN, DOT, INT, FLOAT, CHAR, BOOL};
 
 protected:
 	TokenType type;
@@ -64,10 +66,16 @@ public:
 };
 
 std::ostream& operator<< (std::ofstream &out, Token &currentToken){
-	out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
-	return out;
-} 
+	out << currentToken.typeToText();
+	if (currentToken.getText() != std::string("")) 
+		out << ": " << currentToken.getText();
+	out << '\n';
+		return out;
+	} 
 
-void Token::print(std::ofstream &out, Token &currentToken){
+	void Token::print(std::ofstream &out, Token &currentToken){
         out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
-}
+	}
+//(currentToken.getText() != std::string("")
+
+//(std::string(", text: ") + 
