@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ALPHABET.H 
+#define ALPHABET.H 
 
 #include "common_header.h"
 
@@ -77,3 +78,4 @@ public:
 		return (str == "end");
 	}
 };
+#endif

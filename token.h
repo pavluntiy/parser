@@ -1,12 +1,20 @@
+#ifndef TOKEN.H 
+#define TOKEN.H 
 #include "common_header.h"
 
-#pragma once
 class Token: public Alphabet { 
 public:
 	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, 
 					BLOCK_END, COMMENT, SEMICOLON, 
-					NAME, OPERATOR, KEYWORD, COMMA, 
-					ASSIGN, DOT, INT, FLOAT, CHAR, BOOL};
+					NAME, 
+					OPERATOR, 
+					BRACE_LEFT, BRACE_RIGHT,
+					BRACKET_LEFT, BRACKET_RIGHT,
+					CURL_LEFT, CURL_RIGHT,
+					KEYWORD, 
+					COMMA, DOT,
+					ASSIGN,  
+					INT, FLOAT, CHAR, BOOL};
 
 protected:
 	TokenType type;
@@ -24,6 +32,12 @@ public:
 			case SEMICOLON: return "SEMICOLON";
 			case NAME: return "NAME";
 			case OPERATOR: return "OPERATOR";
+			case BRACE_RIGHT: return "BRACE_RIGHT";
+			case BRACE_LEFT: return "BRACE_LEFT";
+			case BRACKET_RIGHT: return "BRACKET_RIGHT";
+			case BRACKET_LEFT: return "BRACKET_LEFT";
+			case CURL_RIGHT: return "CURL_RIGHT";
+			case CURL_LEFT: return "CURL_LEFT";
 			case KEYWORD: return "KEYWORD";
 			case COMMA: return "COMMA";
 			case ASSIGN: return "ASSIGN";
@@ -33,6 +47,7 @@ public:
 			case CHAR: return "CHAR";
 			case BOOL: return "BOOL";
 		}
+		return "ERROR";
 	}
 	std::string getText (){
 		return this->text;
@@ -73,9 +88,4 @@ std::ostream& operator<< (std::ofstream &out, Token &currentToken){
 		return out;
 	} 
 
-	void Token::print(std::ofstream &out, Token &currentToken){
-        out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
-	}
-//(currentToken.getText() != std::string("")
-
-//(std::string(", text: ") + 
+#endif

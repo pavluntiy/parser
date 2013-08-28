@@ -1,27 +1,22 @@
-#pragma once
+#ifndef LEXER.H 
+#define LEXER.H 
 #include "common_header.h"
 #include "alphabet.h"
 #include "token.h"
+#include "consument.h"
 
-/*
-  TODO
 
-  1. Ничего из Token::TokenType здесь не в области видимости, надо пофиксить.
-  2. В alphabet довольно странные функции, и потом Token не является Alphabet => зачем наследование?
-  в алфавите по идее все должно быть статическим.
- */
-
-class Lexer {
+class Lexer: public Consument {
 
 protected:
-	std::string input;
 	std::vector<Token> tokenList;
-	std::stack<Token> storage;
+	std::string input;
+	
 	int currentPosition;
 	char currentChar;
 	Token currentToken;
 
-	void terminate(std::string message){
+	void terminate(std::string message){	
 			throw ParserException(message);
 		}
 
@@ -80,11 +75,9 @@ protected:
 		}
 
 	} blockDetecter;
-	
 
 
-
-
+public:
 	void consume (){
 		currentPosition++; 
 
@@ -185,7 +178,7 @@ protected:
 		}
 		return Token(Token::COMMENT, buffer);
 	}
-
+	
 	Token getSystemTokens (){
 			while (Alphabet::isWhitespace(currentChar)){
 				consume();
@@ -224,16 +217,8 @@ protected:
 
 	}
 
-	Token getSymbolicTokens(){
-
-		switch (currentChar) {
-					case '#' : return getComment();
-			        case ',' : match(','); return Token(Token::COMMA, "," );
-			       
-			        case ';' : match(';'); return Token(Token::SEMICOLON, ";");
-
-			        case '.' : match('.'); 
-			        if (currentChar == '.'){
+	Token getDotVariants (){
+		 if (currentChar == '.'){
 			         	match ('.');
 			         	if (currentChar == '.'){
 			         		match('.');
@@ -246,9 +231,24 @@ protected:
 			        else {
 			         	return Token(Token::DOT, "." ); 
 			     	}
+	}
 
-				case ':' : match(':'); 
-					if ( currentChar == '=' ) {
+	Token getPlusVariants (){
+		if ( currentChar == '+' ){
+						match('+');
+						return Token(Token::OPERATOR, "++"); 
+					}
+					else if ( currentChar == '=' ){
+						match('=');
+						return Token(Token::OPERATOR, "+=");
+					}
+					else {
+						return Token(Token::OPERATOR, "+");
+					}
+	}
+
+	Token getColonVariants(){
+		if ( currentChar == '=' ) {
 						match('=');
 						return Token(Token::OPERATOR, ":="); 
 					}
@@ -264,23 +264,10 @@ protected:
 					else {
 						return Token(Token::OPERATOR, ":");
 					}
-					
+	}
 
-				case '+' : match('+'); 
-					if ( currentChar == '+' ){
-						match('+');
-						return Token(Token::OPERATOR, "++"); 
-					}
-					else if ( currentChar == '=' ){
-						match('=');
-						return Token(Token::OPERATOR, "+=");
-					}
-					else {
-						return Token(Token::OPERATOR, "+");
-					}
-
-				case '-' : match('-');
-					if (currentChar == '>'){
+	Token getMinusVariats(){
+		if (currentChar == '>'){
 						return Token(Token::OPERATOR, "->");
 					}
 					else if (currentChar == '-' ){
@@ -299,19 +286,20 @@ protected:
 					else {
 						return Token(Token::OPERATOR, "-");
 					}
-					
+	}
 
-					case '=': match('=');
-					if (currentChar == '='){
+	Token getEqualsVariants(){
+		if (currentChar == '='){
 						match('=');
 						return Token(Token::OPERATOR, "==");
 					}
 					else {
 						return Token(Token::OPERATOR, "=");
 					}
+	}
 
-					case '<':match('<');
-					if (currentChar == '='){
+	Token getLessVariants(){
+		if (currentChar == '='){
 						match('=');
 						return Token(Token::OPERATOR, "<=");
 					}
@@ -324,8 +312,10 @@ protected:
 
 					}
 
-					case '>':match('>');
-					if (currentChar == '='){
+	}
+
+	Token getGreaterVariants(){
+		if (currentChar == '='){
 						match('=');
 						return Token(Token::OPERATOR, ">=");
 					}
@@ -343,8 +333,141 @@ protected:
 						return Token(Token::OPERATOR, ">");
 
 					}
-					case EOF: return Token (Token::END, "");
+	}
 
+	Token getSlashVariants(){
+			if (currentChar == '/'){
+						match('/');
+						return Token(Token::OPERATOR, "//");
+					}
+					else if (currentChar == '='){
+						match('=');
+						return Token(Token::OPERATOR, "/=");
+					}
+					else {
+						return Token(Token::OPERATOR, "/");
+					}
+	}
+
+	Token getProcentVariants(){
+			if (currentChar == '='){
+						match('=');
+						return Token(Token::OPERATOR, "%%=");
+					}
+					else {
+						return Token(Token::OPERATOR, "%%");
+					}
+	}
+
+	Token getStarVariants(){
+			if ( currentChar == '+' ){
+						match('+');
+						return Token(Token::OPERATOR, "**"); 
+					}
+					else if ( currentChar == '=' ){
+						match('=');
+						return Token(Token::OPERATOR, "*=");
+					}
+					else {
+						return Token(Token::OPERATOR, "*");
+					}
+
+	}
+
+	Token getAmpersandVariants(){
+			if ( currentChar == '&' ){
+				match('&');
+				if (currentChar == '='){
+					match('=');
+					return Token(Token::OPERATOR, "&&="); 
+				}
+				return Token(Token::OPERATOR, "&&"); 
+			}
+			else if ( currentChar == '=' ){
+				match('=');
+				return Token(Token::OPERATOR, "&=");
+			}
+			else {
+				return Token(Token::OPERATOR, "&");
+			}
+
+	}
+
+	Token getDashVariants(){
+			if (currentChar == '|' ){
+				match('|');
+				if (currentChar == '='){
+					match('=');
+					return Token(Token::OPERATOR, "||="); 
+				}
+				return Token(Token::OPERATOR, "||"); 
+			}
+			else if ( currentChar == '=' ){
+				match('=');
+				return Token(Token::OPERATOR, "|=");
+			}
+			else {
+				return Token(Token::OPERATOR, "|");
+			}
+
+	}
+
+	Token getWaveVariants(){
+			if ( currentChar == '=' ){
+				match('=');
+				return Token(Token::OPERATOR, "~=");
+			}
+			else {
+				return Token(Token::OPERATOR, "~");
+			}
+
+	}
+
+	Token getExclamationMarkVariants(){
+		if ( currentChar == '=' ){
+				match('=');
+				return Token(Token::OPERATOR, "!=");
+			}
+			else {
+				return Token(Token::OPERATOR, "!");
+			}
+	}
+
+
+
+
+	Token getSymbolicTokens(){
+
+		switch (currentChar) {
+					case '#' : match('#'); return getComment();
+					case '(' : match('('); return Token(Token::BRACE_LEFT);
+					case ')' : match(')'); return Token(Token::BRACE_RIGHT);
+					case '[' : match('['); return Token(Token::BRACKET_LEFT);
+					case ']' : match(']'); return Token(Token::BRACKET_RIGHT);
+					case '{' : match('{'); return Token(Token::CURL_LEFT);
+					case '}' : match('}'); return Token(Token::CURL_RIGHT);
+
+			        case ',' : match(','); return Token(Token::COMMA);			       
+			        case ';' : match(';'); return Token(Token::SEMICOLON);
+			        case '?' : match('?'); return Token(Token::OPERATOR, "?");
+
+			        case EOF: return Token (Token::END, "");
+
+
+			        case '.' : match('.'); return getDotVariants();
+					case ':' : match(':'); return getColonVariants();
+					case '+' : match('+'); return getPlusVariants();				
+					case '-' : match('-'); return getMinusVariats();									
+					case '=' : match('='); return getEqualsVariants();		
+					case '<' : match('<'); return getLessVariants();					
+					case '>' : match('>'); return getGreaterVariants();				
+					case '/' : match('/'); return getSlashVariants();
+					case '%' : match('%'); return getProcentVariants();
+					case '*' : match('*'); return getStarVariants();
+					case '&' : match('&'); return getAmpersandVariants();
+					case '|' : match('|'); return getDashVariants();
+					case '~' : match('~'); return getWaveVariants();
+					case '!' : match('!'); return getExclamationMarkVariants();
 				default: 
 					if (Alphabet::isSpecialSymbol(currentChar)){
 						char c = currentChar; 
@@ -399,7 +522,7 @@ protected:
 public: 
 
 
-	Lexer (std::string input): input(input), currentPosition(0){
+	Lexer (std::string input): Consument(), input(input), currentPosition(0){
 		currentChar = input[currentPosition];
 	}
 
@@ -409,3 +532,5 @@ public:
 	}
 	
 };
+
+#endif
