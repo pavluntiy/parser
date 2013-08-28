@@ -2,17 +2,13 @@
 #include "alphabet.h"
 
 #pragma once
-class Token: public Alphabet { 
-public:
-	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, COMMENT, SEMICOLON, NAME, OPERATOR, KEYWORD, COMMA, ASSIGN, DOT, INT, FLOAT, CHAR, BOOL};
 
-protected:
-	TokenType type;
-	std::string text;
+enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, COMMENT, SEMICOLON, NAME, 
+		OPERATOR, KEYWORD, COMMA, ASSIGN, DOT, INT, FLOAT, CHAR, BOOL
+		};
 
-public:
-	std::string typeToText(){
-		switch (this->type){
+std::string typeToText(TokenType type){
+		switch (type){
 			case NONE: return "NONE";
 			case BEGIN: return "BEGIN";
 			case END: return "END";
@@ -32,6 +28,15 @@ public:
 			case BOOL: return "BOOL";
 		}
 	}
+
+class Token { 
+public:
+
+	TokenType type;
+	std::string text;
+
+public:
+	
 	std::string getText (){
 		return this->text;
 	}
@@ -59,15 +64,15 @@ public:
 	void print(std::ofstream &out, Token &currentToken);
 
 	std::string toString (){
-		return (this->typeToText() + ", text: " + this->getText() + '\n');
+		return (typeToText(this->type) + ", text: " + this->getText() + '\n');
 	}
 };
 
 std::ostream& operator<< (std::ofstream &out, Token &currentToken){
-	out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
+	out << typeToText(currentToken.type) << ", text: " << currentToken.getText() << '\n';
 	return out;
 } 
 
 void Token::print(std::ofstream &out, Token &currentToken){
-        out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
+        out << typeToText(currentToken.type) << ", text: " << currentToken.getText() << '\n';
 }
