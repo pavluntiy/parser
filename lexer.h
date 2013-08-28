@@ -3,13 +3,12 @@
 #include "alphabet.h"
 #include "token.h"
 
-/*
+/* 
   TODO
+  
+  Надо что-то сделать чтобы пробелы тоже считались отступом
 
-  1. Ничего из Token::TokenType здесь не в области видимости, надо пофиксить.
-  2. В alphabet довольно странные функции, и потом Token не является Alphabet => зачем наследование?
-  в алфавите по идее все должно быть статическим.
- */
+*/
 
 class Lexer {
 public: 
@@ -18,65 +17,48 @@ public:
 	std::stack<Token> storage;
 
 	void terminate(std::string message){
-			throw ParserException(message);
+		throw ParserException(message);
+	}
+
+	int currentTabDepth; 
+	std::stack<int> previous;
+
+	void freeBlocksStack(){	
+		while (!previous.empty()){			
+			previous.pop();
+			parent->tokenList.push_back(Token(TokenType::BLOCK_END));
 		}
+	}
 
-	struct BlockDetecter {
-		Lexer *parent;
-		int currentTabDepth; 
-		std::stack<int> previous;
+	bool isNewBlock(int tabCount){
+		if (tabCount > currentTabDepth){
+			previous.push(currentTabDepth);
+			currentTabDepth = tabCount;
+			return true;
+		}
+		return false;
+	}
 
-
-		void freeBlocksStack(){	    //у тебя здесь возращаемый тип был Token, но ты ничего не возвращал и я его сменил его на void
-			while (!previous.empty()){			
+	bool isOldBlock (int tabCount){
+		if (tabCount < currentTabDepth){
+			
+			while (!previous.empty() && previous.top() != tabCount){
+				parent->tokenList.push_back(Token(TokenType::BLOCK_END));
 				previous.pop();
-				parent->tokenList.push_back(Token(Token::BLOCK_END));
 			}
-		}
 
-		bool isNewBlock(int tabCount){
-			if (tabCount > currentTabDepth){
-				previous.push(currentTabDepth);
-				currentTabDepth = tabCount;
+			if (previous.empty() && tabCount != 0){
+			        throw ParserException("No match for this block!");
+			}
+			else{
+				currentTabDepth = previous.top();
+				previous.pop();
 				return true;
 			}
-			return false;
+			
 		}
-
-		bool isOldBlock (int tabCount){
-			if (tabCount < currentTabDepth){
-				
-				while (!previous.empty() && previous.top() != tabCount){
-					parent->tokenList.push_back(Token(Token::BLOCK_END));
-					previous.pop();
-				}
-
-				if (previous.empty() && tabCount != 0){
-				        //parent->terminate("No match for this block!");
-				        //std::cerr << "No match for this block!\n";
-				        throw ParserException("No match for this block!");
-				}
-				else{
-					currentTabDepth = previous.top();
-					previous.pop();
-					return true;
-				}
-				
-			}
-			return false;
-		}
-
-		BlockDetecter(Lexer *parent){
-			this->parent = parent;
-			this->currentTabDepth = 0;
-		}
-
-		BlockDetecter(){
-			this->currentTabDepth = 0;
-		}
-
-	} blockDetecter;
-	
+		return false;
+	}
 
 	int currentPosition;
 	char currentChar;
@@ -114,11 +96,6 @@ public:
 		    throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n"));
 	}
 
-	void consumeWS(){
-		while (isWhitespace(currentChar))
-			consume();
-	}
-
 	void consumeNewlines(){
 		while (isNewline(currentChar))
 			consume();
@@ -133,7 +110,7 @@ public:
 		int counter = 0;
 		while (isTab(currentChar)){
 			consume();
-			counter++;
+			++counter;
 		}
 		return counter;
 	}
@@ -163,18 +140,18 @@ public:
 		}
 
 		if (isBoolConstant(buffer)){
-			return Token(BOOL, buffer);
+			return Token(TokenType::BOOL, buffer);
 		}
 
 		if (isEnd(buffer)){
-			return Token(BLOCK_END);
+			return Token(TokenType::BLOCK_END);
 		}
 
 		if (isKeyWord(buffer)){
-			return Token(KEYWORD, buffer);
+			return Token(TokenType::KEYWORD, buffer);
 		}
 
-		return Token(NAME, buffer);
+		return Token(TokenType::NAME, buffer);
 
 
 	}
@@ -185,9 +162,7 @@ public:
 			buf += currentChar;
 			consume();
 		}
-		std::cout << buf;
-		return Token (COMMENT, buf);
-
+		return Token (TokenType::COMMENT, buf);
 	}
 
 	Token getNextToken(){
@@ -197,20 +172,18 @@ public:
 			}
 
 			if (isNewline(currentChar)){
-
 				int tabCount;
 				while (isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
-					
+				}	
+				
+				if (isNewBlock(tabCount)) {
+					return Token(TokenType::BLOCK_BEGIN, "");
 				}
 				
-				if (blockDetecter.isNewBlock(tabCount)){
-				        return Token(Token::BLOCK_BEGIN, "");
-				}
-				
-				if (get("end") || blockDetecter.isOldBlock(tabCount)){
-				        return Token(Token::BLOCK_END, "");
+				if (get("end") || isOldBlock(tabCount)) {
+					return Token(TokenType::BLOCK_END, "");
 				}
 			}			
 
@@ -222,44 +195,44 @@ public:
 
 			switch (currentChar) {
 				case '#' : return getComment();
-			        case ',' : match(','); return Token(COMMA, "," );
-			        case '.' : match('.'); return Token(DOT, "." ); 
-			        case ';' : match(';'); return Token(SEMICOLON, ";");
+			        case ',' : match(','); return Token(TokenType::COMMA, "," );
+			        case '.' : match('.'); return Token(TokenType::DOT, "." ); 
+			        case ';' : match(';'); return Token(TokenType::SEMICOLON, ";");
 
 				case ':' : match(':'); 
 					if ( currentChar == '=' ) 
-						return Token(OPERATOR, ":="); 
+						return Token(TokenType::OPERATOR, ":="); 
 					else 
-						return Token(OPERATOR, ":");
+						return Token(TokenType::OPERATOR, ":");
 
 				case '+' : match('+'); 
 					if ( currentChar == '+' ) 
-						return Token(OPERATOR, "++"); 
+						return Token(TokenType::OPERATOR, "++"); 
 					else if ( currentChar == '=' )
-						return Token(OPERATOR, "+=");
+						return Token(TokenType::OPERATOR, "+=");
 					else
-						return Token(OPERATOR, "+");
+						return Token(TokenType::OPERATOR, "+");
 
 				case '-' : match('-');
 					if ( currentChar == '-' )
-						return Token(OPERATOR, "--");
+						return Token(TokenType::OPERATOR, "--");
 					else if ( currentChar == '=' )
-						return Token(OPERATOR, "-=");
+						return Token(TokenType::OPERATOR, "-=");
 					else
-						return Token(OPERATOR, "-");
+						return Token(TokenType::OPERATOR, "-");
 					
 				default: terminate("some trash");
 
 
 			}
 		}
-		return Token (Token::END, "");
+		return Token (TokenType::END, "");
 
 	}
 
 	void tokenize (){
 		blockDetecter = BlockDetecter(this);
-		currentToken = Token(Token::BEGIN, "");
+		currentToken = Token(TokenType::BEGIN, "");
 		tokenList.push_back(currentToken);
 
 		do {
@@ -267,7 +240,7 @@ public:
 			tokenList.push_back(currentToken);
 
 		}
-		while (currentToken != Token(Token::END, ""));
+		while (currentToken != Token(TokenType::END, ""));
 	}
 
 
