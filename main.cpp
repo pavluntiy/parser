@@ -13,11 +13,16 @@ int main (){
 
 	Lexer lexer(input);
 
-	auto list = lexer.getTokenList();
+	try {
+		auto list = lexer.getTokenList();
+		for (auto c: list){
+			out << c.toString();
+		}
 
-	for (auto c: list){
-		out << c;
 	}
-
+	catch ( ParserException& e ) {
+		std::cerr << e.what() << '\n';
+	}
+	
 	return 0;
 }
