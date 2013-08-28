@@ -14,7 +14,7 @@ public:
 					KEYWORD, 
 					COMMA, DOT,
 					ASSIGN,  
-					INT, FLOAT, CHAR, BOOL};
+					INT, FLOAT, CHAR, BOOL, STRING};
 
 protected:
 	TokenType type;
@@ -46,6 +46,7 @@ public:
 			case FLOAT: return "FLOAT";
 			case CHAR: return "CHAR";
 			case BOOL: return "BOOL";
+			case STRING: return "STRING";
 		}
 		return "ERROR";
 	}

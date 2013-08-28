@@ -81,6 +81,9 @@ public:
 	void consume (){
 		currentPosition++; 
 
+		if (currentChar == EOF){
+			throw ParserException("Unfinished char or string");
+		}
 		if ( currentPosition >= (int)input.length() )
 			currentChar = EOF;
 		else
@@ -144,9 +147,9 @@ public:
 			return Token(Token::BOOL, buffer);
 		}
 
-		if (Alphabet::isEnd(buffer)){
+/*		if (Alphabet::isEnd(buffer)){
 			return Token(Token::BLOCK_END);
-		}
+		}*/
 
 		if (Alphabet::isKeyWord(buffer)){
 			return Token(Token::KEYWORD, buffer);
@@ -156,7 +159,7 @@ public:
 
 
 	}
-
+/////TODO
 	bool tryComment (){
 		return Alphabet::isCommentBegin(std::string("") + currentChar) 
 			|| Alphabet::isCommentBegin(std::string("") + currentChar + input[currentPosition + (currentPosition < (int) input.size() - 1) ? 1 : 0]); 
@@ -176,7 +179,110 @@ public:
 			buffer += currentChar;
 			consume();
 		}
+		consume();
 		return Token(Token::COMMENT, buffer);
+	}
+
+	Token getChar(){
+		std::string buffer;
+		buffer += '\'';
+		while (currentChar != '\''){
+			buffer += currentChar;
+			consume();
+		}
+		consume();
+		buffer += '\'';
+		return Token(Token::CHAR, buffer); 
+	}
+
+	Token getString(){
+		std::string buffer;
+		buffer += '\"';
+		while (currentChar != '\"'){
+			buffer += currentChar;
+			consume();
+		}
+		consume();
+		buffer += '\"';
+		return Token(Token::STRING, buffer); 
+	}
+
+	Token tryAndGetNumeric(){
+		std::string buffer;
+		bool isFloat = false;
+		bool zeroFound = false;
+		bool numericDetected = false;
+
+		if (currentChar == '0'){
+			zeroFound = true;
+			buffer += currentChar;
+			numericDetected = true;
+			consume();
+		}
+
+		if (currentChar == 'X' || currentChar == 'x'){
+			if (zeroFound){
+			buffer += 'x';
+				consume();
+				if (!Alphabet::isHexadecimalDigit(currentChar)){
+					throw ParserException("Hexadecimal not recognized");
+				}
+				while (Alphabet::isHexadecimalDigit(currentChar) || currentChar == '_' || currentChar == '.'){
+					if (currentChar == '.'){
+						isFloat = true;
+					}
+					buffer += currentChar;
+					consume();
+				}
+			}
+		}
+
+
+		if (currentChar == 'B' || currentChar == 'b'){
+			if (zeroFound){
+				buffer += 'b';
+				consume();
+				if (!Alphabet::isBinaryDigit(currentChar)){
+					throw ParserException("Binar not recognized");
+				}
+				while (Alphabet::isBinaryDigit(currentChar) || currentChar == '_' || currentChar == '.'){
+					if (currentChar == '.'){
+						isFloat = true;
+					}
+					buffer += currentChar;
+					consume();
+				}
+			}
+		}
+
+		if (zeroFound){
+			while (Alphabet::isOctalDigit(currentChar)|| currentChar == '_' || currentChar == '.'){
+			if (currentChar == '.'){
+						isFloat = true;
+					}
+					buffer += currentChar;
+					consume();							
+			}
+		}
+
+		if (Alphabet::isDigit(currentChar)){
+			numericDetected = true;
+		}
+		while (Alphabet::isDigit(currentChar)|| currentChar == '_' || currentChar == '.'){
+			if (currentChar == '.'){
+						isFloat = true;
+					}
+					buffer += currentChar;
+					consume();							
+		}
+
+		if (numericDetected){
+			if (isFloat){
+				return Token(Token::FLOAT, buffer);
+			}
+			return Token(Token::INT, buffer);
+		}
+		else return Token(Token::NONE);		
 	}
 	
 	Token getSystemTokens (){
@@ -198,7 +304,7 @@ public:
 				        return Token(Token::BLOCK_BEGIN, "");
 				}
 				
-				if (!tryComment() && (get("end") || blockDetecter.isOldBlock(tabCount))){
+				if (!tryComment() && (blockDetecter.isOldBlock(tabCount))){
 				        return Token(Token::BLOCK_END, "");
 				}
 			}			
@@ -212,8 +318,7 @@ public:
 			if (get("/*"))
 					return getMultyLineComment();
 
-
-			return Token(Token::NONE);
+			return tryAndGetNumeric();
 
 	}
 
@@ -360,8 +465,8 @@ public:
 	}
 
 	Token getStarVariants(){
-			if ( currentChar == '+' ){
-						match('+');
+			if ( currentChar == '*' ){
+						match('*');
 						return Token(Token::OPERATOR, "**"); 
 					}
 					else if ( currentChar == '=' ){
@@ -453,6 +558,8 @@ public:
 
 			        case EOF: return Token (Token::END, "");
 
+			        case '\'': match ('\''); return getChar();
+			        case '\"': match ('\"'); return getString();
 
 			        case '.' : match('.'); return getDotVariants();
 					case ':' : match(':'); return getColonVariants();
@@ -475,8 +582,7 @@ public:
 						return Token(Token::OPERATOR, std::string("") + c);
 					}
 					else{
-						std::cout << (int) currentChar;
-						throw ParserException(std::string("Unknown character ") + currentChar + "\n");
+						throw ParserException(std::string("Unknown character ") + currentChar + '\n');
 					}
 
 			}
