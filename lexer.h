@@ -3,6 +3,13 @@
 #include "alphabet.h"
 #include "token.h"
 
+/* 
+  TODO
+  
+  Надо что-то сделать чтобы пробелы тоже считались отступом
+
+*/
+
 class Lexer {
 public: 
 	std::string input;
@@ -13,60 +20,45 @@ public:
 		throw ParserException(message);
 	}
 
-	struct BlockDetecter {
-		Lexer *parent;
-		int currentTabDepth; 
-		std::stack<int> previous;
+	int currentTabDepth; 
+	std::stack<int> previous;
 
-
-		void freeBlocksStack(){	
-			while (!previous.empty()){			
-				previous.pop();
-				parent->tokenList.push_back(Token(Token::BLOCK_END));
-			}
+	void freeBlocksStack(){	
+		while (!previous.empty()){			
+			previous.pop();
+			parent->tokenList.push_back(Token(TokenType::BLOCK_END));
 		}
+	}
 
-		bool isNewBlock(int tabCount){
-			if (tabCount > currentTabDepth){
-				previous.push(currentTabDepth);
-				currentTabDepth = tabCount;
+	bool isNewBlock(int tabCount){
+		if (tabCount > currentTabDepth){
+			previous.push(currentTabDepth);
+			currentTabDepth = tabCount;
+			return true;
+		}
+		return false;
+	}
+
+	bool isOldBlock (int tabCount){
+		if (tabCount < currentTabDepth){
+			
+			while (!previous.empty() && previous.top() != tabCount){
+				parent->tokenList.push_back(Token(TokenType::BLOCK_END));
+				previous.pop();
+			}
+
+			if (previous.empty() && tabCount != 0){
+			        throw ParserException("No match for this block!");
+			}
+			else{
+				currentTabDepth = previous.top();
+				previous.pop();
 				return true;
 			}
-			return false;
+			
 		}
-
-		bool isOldBlock (int tabCount){
-			if (tabCount < currentTabDepth){
-				
-				while (!previous.empty() && previous.top() != tabCount){
-					parent->tokenList.push_back(Token(Token::BLOCK_END));
-					previous.pop();
-				}
-
-				if (previous.empty() && tabCount != 0){
-				        throw ParserException("No match for this block!");
-				}
-				else{
-					currentTabDepth = previous.top();
-					previous.pop();
-					return true;
-				}
-				
-			}
-			return false;
-		}
-
-		BlockDetecter(Lexer *parent){
-			this->parent = parent;
-			this->currentTabDepth = 0;
-		}
-
-		BlockDetecter(){
-			this->currentTabDepth = 0;
-		}
-
-	} blockDetecter;
-	
+		return false;
+	}
 
 	int currentPosition;
 	char currentChar;
@@ -104,11 +96,6 @@ public:
 		    throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n"));
 	}
 
-	void consumeWS(){
-		while (isWhitespace(currentChar))
-			consume();
-	}
-
 	void consumeNewlines(){
 		while (isNewline(currentChar))
 			consume();
@@ -123,7 +110,7 @@ public:
 		int counter = 0;
 		while (isTab(currentChar)){
 			consume();
-			counter++;
+			++counter;
 		}
 		return counter;
 	}
@@ -175,9 +162,7 @@ public:
 			buf += currentChar;
 			consume();
 		}
-		std::cout << buf;
 		return Token (TokenType::COMMENT, buf);
-
 	}
 
 	Token getNextToken(){
@@ -187,20 +172,18 @@ public:
 			}
 
 			if (isNewline(currentChar)){
-
 				int tabCount;
 				while (isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
-					
+				}	
+				
+				if (isNewBlock(tabCount)) {
+					return Token(TokenType::BLOCK_BEGIN, "");
 				}
 				
-				if (blockDetecter.isNewBlock(tabCount)){
-				        return Token(TokenType::BLOCK_BEGIN, "");
-				}
-				
-				if (get("end") || blockDetecter.isOldBlock(tabCount)){
-				        return Token(TokenType::BLOCK_END, "");
+				if (get("end") || isOldBlock(tabCount)) {
+					return Token(TokenType::BLOCK_END, "");
 				}
 			}			
 
