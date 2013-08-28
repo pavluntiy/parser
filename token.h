@@ -2,7 +2,8 @@
 #define TOKEN.H 
 #include "common_header.h"
 
-class Token: public Alphabet { 
+
+class Token{ 
 public:
 	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, 
 					BLOCK_END, COMMENT, SEMICOLON, 
@@ -16,12 +17,8 @@ public:
 					ASSIGN,  
 					INT, FLOAT, CHAR, BOOL, STRING};
 
-protected:
-	TokenType type;
-	std::string text;
 
-public:
-	std::string typeToText(){
+std::string typeToText(){
 		switch (this->type){
 			case NONE: return "NONE";
 			case BEGIN: return "BEGIN";
@@ -50,6 +47,13 @@ public:
 		}
 		return "ERROR";
 	}
+
+
+	TokenType type;
+	std::string text;
+
+public:
+	
 	std::string getText (){
 		return this->text;
 	}
@@ -74,19 +78,12 @@ public:
 		return (this->type != second.type);
 	}
 
-	void print(std::ofstream &out, Token &currentToken);
-
-	std::string toString (){
-		return (this->typeToText() + ", text: " + this->getText() + '\n');
-	}
 };
 
 std::ostream& operator<< (std::ofstream &out, Token &currentToken){
-	out << currentToken.typeToText();
-	if (currentToken.getText() != std::string("")) 
-		out << ": " << currentToken.getText();
-	out << '\n';
-		return out;
-	} 
 
+	out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
+	return out;
+} 
 #endif
+

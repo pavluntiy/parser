@@ -6,7 +6,14 @@
 #include "consument.h"
 
 
-class Lexer: public Consument {
+class Lexer{
+
+/* 
+  TODO
+  
+  Надо что-то сделать чтобы пробелы тоже считались отступом
+
+*/
 
 protected:
 	std::vector<Token> tokenList;
@@ -16,65 +23,65 @@ protected:
 	char currentChar;
 	Token currentToken;
 
-	void terminate(std::string message){	
-			throw ParserException(message);
+
+	void terminate(std::string message){
+		throw ParserException(message);
+	}
+
+	int currentTabDepth; 
+	std::stack<int> previous;
+
+
+
+	void freeBlocksStack(){	
+		std::cout << "freeBlocksStack\n"; 
+		while (!previous.empty()){			
+			previous.pop();
+			tokenList.push_back(Token(Token::BLOCK_END));
 		}
+	}
 
-	struct BlockDetecter {
-		Lexer *parent;
-		int currentTabDepth; 
-		std::stack<int> previous;
-
-
-		void freeBlocksStack(){
-			while (!previous.empty()){			
-				previous.pop();
-				parent->tokenList.push_back(Token(Token::BLOCK_END));
-			}
+	bool isNewBlock(int tabCount){
+		if (tabCount > currentTabDepth){
+			previous.push(currentTabDepth);
+			currentTabDepth = tabCount;
+			std::cout << previous.size() << " isNewBlock \n";
+			return true;
 		}
+		return false;
+	}
 
-		bool isNewBlock(int tabCount){
-			if (tabCount > currentTabDepth){
-				previous.push(currentTabDepth);
-				currentTabDepth = tabCount;
-				return true;
-			}
-			return false;
-		}
-
-		bool isOldBlock (int tabCount){
-			if (tabCount < currentTabDepth){
+	bool isOldBlock (int tabCount){
+		std::cout << currentTabDepth << ':';
+		if (tabCount < currentTabDepth){
+			std::cout << currentTabDepth << ':';
+			while (!previous.empty()){ //&& previous.top() != tabCount){
 				
-				while (!previous.empty() && previous.top() != tabCount){
-					parent->tokenList.push_back(Token(Token::BLOCK_END));
-					previous.pop();
-				}
+				tokenList.push_back(Token(Token::BLOCK_END));
 
-				if (previous.empty() && tabCount != 0){
-				        //parent->terminate("No match for this block!");
-				        //std::cerr << "No match for this block!\n";
+				previous.pop();
+
+				std::cout << previous.size() << " isOldBlock  " << tabCount << "\n";
+			}
+
+			if (previous.empty() && tabCount != 0){
 				        throw ParserException("No match for this block!");
-				}
-				else{
-					currentTabDepth = previous.top();
-					previous.pop();
+			}
+			else{
+					//std::cout << "*****";
+					if (!previous.empty()){
+						currentTabDepth = previous.top();
+						previous.pop();
+					}			
+					else {
+						throw ParserException("asdf");
+					}
 					return true;
 				}
-				
-			}
-			return false;
-		}
 
-		BlockDetecter(Lexer *parent){
-			this->parent = parent;
-			this->currentTabDepth = 0;
 		}
-
-		BlockDetecter(){
-			this->currentTabDepth = 0;
-		}
-
-	} blockDetecter;
+		return false;
+	}
 
 
 public:
@@ -114,6 +121,7 @@ public:
 			consume();
 	}
 
+
 	void consumeNewlines(){
 		while (Alphabet::isNewline(currentChar))
 			consume();
@@ -128,7 +136,7 @@ public:
 		int counter = 0;
 		while (Alphabet::isTab(currentChar)){
 			consume();
-			counter++;
+			++counter;
 		}
 		return counter;
 	}
@@ -147,16 +155,11 @@ public:
 			return Token(Token::BOOL, buffer);
 		}
 
-/*		if (Alphabet::isEnd(buffer)){
-			return Token(Token::BLOCK_END);
-		}*/
-
 		if (Alphabet::isKeyWord(buffer)){
 			return Token(Token::KEYWORD, buffer);
 		}
 
 		return Token(Token::NAME, buffer);
-
 
 	}
 /////TODO
@@ -291,32 +294,41 @@ public:
 			}
 
 			if (Alphabet::isNewline(currentChar)){
-
-
 				int tabCount;
 				while (Alphabet::isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
-					
-				}
+				}	
 				
-				if (!tryComment() && blockDetecter.isNewBlock(tabCount)){
+
+				if (!tryComment() && isNewBlock(tabCount)){
 				        return Token(Token::BLOCK_BEGIN, "");
 				}
 				
-				if (!tryComment() && (blockDetecter.isOldBlock(tabCount))){
+				if (!tryComment() && isOldBlock(tabCount)){
 				        return Token(Token::BLOCK_END, "");
+				 }
+
+				if (isNewBlock(tabCount)) {
+					return Token(Token::BLOCK_BEGIN, "");
 				}
-			}			
+				
+				if (isOldBlock(tabCount)) {
+					return Token(Token::BLOCK_END, "");
+				}
+			}
 
-			if (Alphabet::isTab(currentChar))
+			if (Alphabet::isTab(currentChar)){
 				consumeTabs();
+			}
 
-			if (Alphabet::isLetter(currentChar))
+			if (get("/*")){
+				return getMultyLineComment();
+			}
+
+			if (Alphabet::isLetter(currentChar)){
 				return getName();
-
-			if (get("/*"))
-					return getMultyLineComment();
+			}
 
 			return tryAndGetNumeric();
 
@@ -351,6 +363,7 @@ public:
 						return Token(Token::OPERATOR, "+");
 					}
 	}
+
 
 	Token getColonVariants(){
 		if ( currentChar == '=' ) {
@@ -613,7 +626,6 @@ public:
 	}
 
 	void tokenize (){
-		blockDetecter = BlockDetecter(this);
 		currentToken = Token(Token::BEGIN, "");
 		tokenList.push_back(currentToken);
 
@@ -628,7 +640,7 @@ public:
 public: 
 
 
-	Lexer (std::string input): Consument(), input(input), currentPosition(0){
+	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
 	}
 

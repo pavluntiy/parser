@@ -3,6 +3,7 @@
 
 #include "common_header.h"
 
+
 class Alphabet {
 public:
 	static	bool isLetter(char c){
@@ -94,3 +95,4 @@ public:
 	}
 };
 #endif
+
