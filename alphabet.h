@@ -23,7 +23,7 @@ public:
 	}
 
 	static bool isHexadecimalDigit(char c){
-		return ('0' <= c && c <= '1' || 'A' <= c && c <= 'F' || 'a' <= c && c <= 'f');
+		return (('0' <= c && c <= '1') || ('A' <= c && c <= 'F') ||('a' <= c && c <= 'f'));
 	}
 
 
@@ -79,6 +79,18 @@ public:
 		if (str == "/*" || str == "#")
 			return true;
 		return false;
+	}
+
+	static bool isAcceptableCharacter (char c){
+		bool isTrue = false;
+		isTrue = isTrue || isNewline(c);
+		isTrue = isTrue || isWhitespace(c);
+		isTrue = isTrue || isCommentSign(c);
+		isTrue = isTrue || isSpecialSymbol(c);
+		isTrue = isTrue || isTab(c);
+		isTrue = isTrue || isLetter(c);
+		isTrue = isTrue || isDigit(c);
+		return isTrue;
 	}
 
 //it's just an example, you shouldn't think, that we'll store our keywords like this;

@@ -287,6 +287,9 @@ public:
 				while (Alphabet::isNewline(currentChar)){
 					consumeNewlines();
 					tabCount = countAndConsumeTabs();
+					while (Alphabet::isWhitespace(currentChar)){
+						consume();
+					}
 				}	
 				
 
@@ -307,8 +310,15 @@ public:
 				}
 			}
 
+			while (Alphabet::isWhitespace(currentChar)){
+				consume();
+			}
+
 			if (Alphabet::isTab(currentChar)){
 				consumeTabs();
+				while (Alphabet::isWhitespace(currentChar)){
+					consume();
+				}
 			}
 
 			if (get("/*")){
@@ -584,7 +594,9 @@ public:
 						return Token(Token::OPERATOR, std::string("") + c);
 					}
 					else{
-						throw ParserException(std::string("Unknown character ") + currentChar + '\n');
+						if (!Alphabet::isAcceptableCharacter(currentChar)){
+							throw ParserException(std::string("Unknown character ") + currentChar + '\n');
+						}
 					}
 
 			}
