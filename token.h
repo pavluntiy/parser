@@ -17,7 +17,14 @@ public:
 					ASSIGN,  
 					INT, FLOAT, CHAR, BOOL, STRING};
 
+struct Position {
+	int line, linePosition;
 
+	Position (int line = 0, int linePosition = 0): line(line), linePosition(linePosition){
+
+	} 
+};
+Position position;
 std::string typeToText(){
 		switch (this->type){
 			case NONE: return "NONE";
@@ -62,10 +69,30 @@ public:
 		return this->type;
 	}
 
-	Token (TokenType type = NONE, std::string text = ""): type(type), text(text)
+/*	Token (TokenType type = NONE, std::string text = ""): type(type), text(text)
 	{
 
 	}
+ //I'd like to write something like this, but I don't know C++!
+/*	Token (TokenType type = NONE, std::string text = "", Position position = {-1, -1}): type(type), text(text), position(position)
+	{
+
+	}
+	*/
+
+
+/*	Token (TokenType type = NONE, char* text = "", Position position = {-1, -1}): type(type), text(std::string(text)), position(position)
+	{
+	}*/
+
+	Token (){
+		
+	}
+
+	Token (TokenType type, char* text, Position position): type(type), text(std::string(text)), position(position)
+	{
+	}
+
 
 
 	bool operator == (const Token &second)
@@ -80,13 +107,20 @@ public:
 
 };
 
-std::ostream& operator<< (std::ofstream &out, Token &currentToken){
+std::ofstream& operator<< (std::ofstream &out, Token::Position &position){
+	out << "line: " << position.line << ", position: " << position.linePosition;
+	return out;
+}
+
+std::ofstream& operator<< (std::ofstream &out, Token &currentToken){
 
 	out << currentToken.typeToText();
 	if (currentToken.getText() != "") {
 		out << ", text: " << currentToken.getText();
 	}
-	out << '\n';
+	out << " (";
+	out << currentToken.position; //I'm to lazy to investigate: I can't compile it if I join this three lines in one "out" operator.
+	out << ")\n";
 	return out;
 } 
 #endif
