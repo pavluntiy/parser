@@ -65,6 +65,16 @@ public:
 	Token currentToken;
 	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
+		
+		this->currentTabDepth = 0;
+      		if (previous.empty() && tabCount != 0){
+              		throw ParserException("No match for this block!");
+		}
+      		else {
+			currentTabDepth = previous.top();
+        		previous.pop();
+        		return true;
+      		}
 	}
 
 
