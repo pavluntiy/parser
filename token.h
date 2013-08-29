@@ -82,7 +82,11 @@ public:
 
 std::ostream& operator<< (std::ofstream &out, Token &currentToken){
 
-	out << currentToken.typeToText() << ", text: " << currentToken.getText() << '\n';
+	out << currentToken.typeToText();
+	if (currentToken.getText() != "") {
+		out << ", text: " << currentToken.getText();
+	}
+	out << '\n';
 	return out;
 } 
 #endif

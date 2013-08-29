@@ -33,8 +33,7 @@ protected:
 
 
 
-	void freeBlocksStack(){	
-		std::cout << "freeBlocksStack\n"; 
+	void freeBlocksStack(){	 
 		while (!previous.empty()){			
 			previous.pop();
 			tokenList.push_back(Token(Token::BLOCK_END));
@@ -45,37 +44,27 @@ protected:
 		if (tabCount > currentTabDepth){
 			previous.push(currentTabDepth);
 			currentTabDepth = tabCount;
-			std::cout << previous.size() << " isNewBlock \n";
 			return true;
 		}
 		return false;
 	}
 
 	bool isOldBlock (int tabCount){
-		std::cout << currentTabDepth << ':';
 		if (tabCount < currentTabDepth){
-			std::cout << currentTabDepth << ':';
-			while (!previous.empty()){ //&& previous.top() != tabCount){
+			while (!previous.empty() && previous.top() != tabCount){
 				
 				tokenList.push_back(Token(Token::BLOCK_END));
 
 				previous.pop();
 
-				std::cout << previous.size() << " isOldBlock  " << tabCount << "\n";
 			}
 
 			if (previous.empty() && tabCount != 0){
 				        throw ParserException("No match for this block!");
 			}
 			else{
-					//std::cout << "*****";
-					if (!previous.empty()){
 						currentTabDepth = previous.top();
 						previous.pop();
-					}			
-					else {
-						throw ParserException("asdf");
-					}
 					return true;
 				}
 
@@ -634,7 +623,7 @@ public:
 			currentToken = getNextToken();
 		}
 		while (currentToken != Token(Token::END, ""));
-		blockDetecter.freeBlocksStack();
+		freeBlocksStack();
 		tokenList.push_back(currentToken);
 	}
 
@@ -643,6 +632,7 @@ public:
 
 	Lexer (std::string input): input(input), currentPosition(0){
 		currentChar = input[currentPosition];
+		currentTabDepth = 0;
 	}
 
 	const std::vector<Token>& getTokenList(){
