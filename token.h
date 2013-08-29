@@ -1,14 +1,25 @@
+#ifndef TOKEN.H 
+#define TOKEN.H 
 #include "common_header.h"
-#include "alphabet.h"
 
-#pragma once
 
-enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, BLOCK_END, COMMENT, SEMICOLON, NAME, 
-		OPERATOR, KEYWORD, COMMA, ASSIGN, DOT, INT, FLOAT, CHAR, BOOL
-		};
+class Token{ 
+public:
+	enum TokenType {NONE, BEGIN, END, BLOCK_BEGIN, 
+					BLOCK_END, COMMENT, SEMICOLON, 
+					NAME, 
+					OPERATOR, 
+					BRACE_LEFT, BRACE_RIGHT,
+					BRACKET_LEFT, BRACKET_RIGHT,
+					CURL_LEFT, CURL_RIGHT,
+					KEYWORD, 
+					COMMA, DOT,
+					ASSIGN,  
+					INT, FLOAT, CHAR, BOOL, STRING};
 
-std::string typeToText(TokenType type){
-		switch (type){
+
+std::string typeToText(){
+		switch (this->type){
 			case NONE: return "NONE";
 			case BEGIN: return "BEGIN";
 			case END: return "END";
@@ -18,6 +29,12 @@ std::string typeToText(TokenType type){
 			case SEMICOLON: return "SEMICOLON";
 			case NAME: return "NAME";
 			case OPERATOR: return "OPERATOR";
+			case BRACE_RIGHT: return "BRACE_RIGHT";
+			case BRACE_LEFT: return "BRACE_LEFT";
+			case BRACKET_RIGHT: return "BRACKET_RIGHT";
+			case BRACKET_LEFT: return "BRACKET_LEFT";
+			case CURL_RIGHT: return "CURL_RIGHT";
+			case CURL_LEFT: return "CURL_LEFT";
 			case KEYWORD: return "KEYWORD";
 			case COMMA: return "COMMA";
 			case ASSIGN: return "ASSIGN";
@@ -26,11 +43,11 @@ std::string typeToText(TokenType type){
 			case FLOAT: return "FLOAT";
 			case CHAR: return "CHAR";
 			case BOOL: return "BOOL";
+			case STRING: return "STRING";
 		}
+		return "ERROR";
 	}
 
-class Token { 
-public:
 
 	TokenType type;
 	std::string text;
@@ -61,18 +78,16 @@ public:
 		return (this->type != second.type);
 	}
 
-	void print(std::ofstream &out, Token &currentToken);
-
-	std::string toString (){
-		return (typeToText(this->type) + ", text: " + this->getText() + '\n');
-	}
 };
 
 std::ostream& operator<< (std::ofstream &out, Token &currentToken){
-	out << typeToText(currentToken.type) << ", text: " << currentToken.getText() << '\n';
+
+	out << currentToken.typeToText();
+	if (currentToken.getText() != "") {
+		out << ", text: " << currentToken.getText();
+	}
+	out << '\n';
 	return out;
 } 
+#endif
 
-void Token::print(std::ofstream &out, Token &currentToken){
-        out << typeToText(currentToken.type) << ", text: " << currentToken.getText() << '\n';
-}
