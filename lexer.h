@@ -615,14 +615,15 @@ public:
 	void tokenize (){
 		blockDetecter = BlockDetecter(this);
 		currentToken = Token(Token::BEGIN, "");
-		tokenList.push_back(currentToken);
+		//tokenList.push_back(currentToken);
 
 		do {
-			currentToken = getNextToken();
 			tokenList.push_back(currentToken);
-
+			currentToken = getNextToken();
 		}
 		while (currentToken != Token(Token::END, ""));
+		blockDetecter.freeBlocksStack();
+		tokenList.push_back(currentToken);
 	}
 
 public: 
