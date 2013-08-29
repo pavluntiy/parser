@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
+#include <sstream>
 
 #include "parserexception.h"
 

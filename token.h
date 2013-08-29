@@ -23,6 +23,12 @@ struct Position {
 	Position (int line = 0, int linePosition = 0): line(line), linePosition(linePosition){
 
 	} 
+
+	std::string toString(){
+		std::stringstream ss;
+		ss << "line: " << this->line << ", position: " << this->linePosition;
+		return ss.str();
+	}
 };
 Position position;
 std::string typeToText(){
@@ -108,7 +114,7 @@ public:
 };
 
 std::ofstream& operator<< (std::ofstream &out, Token::Position &position){
-	out << "line: " << position.line << ", position: " << position.linePosition;
+	out << position.toString();
 	return out;
 }
 

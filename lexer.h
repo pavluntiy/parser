@@ -87,11 +87,14 @@ public:
 			sourcePosition.linePosition++;
 		}
 
-		currentPosition++; 
-
 		if (currentChar == EOF){
-			throw ParserException("Unfinished char or string");
+			throw ParserException("Unexpected end of file");
 		}
+		
+		currentPosition++; 
+		
+		
+		
 		if ( currentPosition >= (int)input.length() )
 			currentChar = EOF;
 		else {
@@ -118,21 +121,6 @@ public:
 		    throw ParserException(std::string("Expected '") + x + std::string("' got '") + currentChar + std::string("'\n"));
 	}
 
-	void consumeWS(){
-		while (Alphabet::isWhitespace(currentChar))
-			consume();
-	}
-
-
-	void consumeNewlines(){
-		while (Alphabet::isNewline(currentChar))
-			consume();
-	}
-
-	void consumeTabs(){
-		while (Alphabet::isTab(currentChar))
-			consume();
-	}
 
 	int countAndConsumeTabs(){
 		int counter = 0;
@@ -179,21 +167,31 @@ public:
 	}
 	
 	Token getMultyLineComment () {
+		Token::Position startPosition = sourcePosition;
 		std::string buffer;
-		while ((!Alphabet::isEof(currentChar) && !get("*/"))){
+		while (!get("*/")){
+			if (Alphabet::isEof(currentChar)){
+				throw ParserException("Unfinished multiline comment on " + startPosition.toString());
+			}
 			buffer += currentChar;
 			consume();
 		}
-		consume();
+		if (!Alphabet::isEof(currentChar)){
+			consume();
+		}
 		return makeToken(Token::COMMENT, buffer);
 	}
 
 	Token getChar(){
+		Token::Position startPosition = sourcePosition;
 		std::string buffer;
 		buffer += '\'';
 		while (currentChar != '\''){
+			if (Alphabet::isEof(currentChar)){
+				throw ParserException("Unfinished charecter symbol on " + startPosition.toString());
+			}
 			buffer += currentChar;
-			consume();
+			consume();		
 		}
 		consume();
 		buffer += '\'';
@@ -201,9 +199,13 @@ public:
 	}
 
 	Token getString(){
+		Token::Position startPosition = sourcePosition;
 		std::string buffer;
 		buffer += '\"';
 		while (currentChar != '\"'){
+			if (Alphabet::isEof(currentChar)){
+				throw ParserException("Unfinished string on " + startPosition.toString());
+			}
 			buffer += currentChar;
 			consume();
 		}
@@ -213,6 +215,7 @@ public:
 	}
 
 	Token tryAndGetNumeric(){
+		Token::Position startPosition = sourcePosition;
 		std::string buffer;
 		bool isFloat = false;
 		bool zeroFound = false;
@@ -230,7 +233,7 @@ public:
 			buffer += 'x';
 				consume();
 				if (!Alphabet::isHexadecimalDigit(currentChar)){
-					throw ParserException("Hexadecimal not recognized");
+					throw ParserException("Hexadecimal not recognized " + startPosition.toString());
 				}
 				while (Alphabet::isHexadecimalDigit(currentChar) || currentChar == '_' || currentChar == '.'){
 					if (currentChar == '.'){
@@ -248,7 +251,7 @@ public:
 				buffer += 'b';
 				consume();
 				if (!Alphabet::isBinaryDigit(currentChar)){
-					throw ParserException("Binar not recognized");
+					throw ParserException("Binary not recognized " + startPosition.toString());
 				}
 				while (Alphabet::isBinaryDigit(currentChar) || currentChar == '_' || currentChar == '.'){
 					if (currentChar == '.'){
@@ -298,7 +301,9 @@ public:
 			if (Alphabet::isNewline(currentChar)){
 				int tabCount;
 				while (Alphabet::isNewline(currentChar)){
-					consumeNewlines();
+					while (Alphabet::isNewline(currentChar)){
+						consume();
+					}
 					tabCount = countAndConsumeTabs();
 				}	
 				
@@ -324,8 +329,8 @@ public:
 				consume();
 			}
 
-			if (Alphabet::isTab(currentChar)){
-				consumeTabs();
+			while (Alphabet::isTab(currentChar)){
+				consume();
 			}
 
 			if (get("/*")){
@@ -635,8 +640,6 @@ public:
 
 	void tokenize (){
 		currentToken = makeToken(Token::BEGIN, "");
-		//tokenList.push_back(currentToken);
-
 		do {
 			tokenList.push_back(currentToken);
 			currentToken = getNextToken();
