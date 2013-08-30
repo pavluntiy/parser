@@ -9,6 +9,5 @@
 
 #include "parserexception.h"
 
-#define pass
-
+const int WS_IN_TAB = 4;
 #endif

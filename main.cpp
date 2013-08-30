@@ -7,7 +7,7 @@ int main (){
 
 	std::ifstream in ("input.in");
 	std::ofstream out ("output.out");
-	while ( !in.eof() ) { 
+	while (!in.eof()) { 
 		input += in.get(); 
 	}
 
