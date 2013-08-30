@@ -29,12 +29,13 @@ protected:
 	}
 
 	bool tryComment (){
-		return (Alphabet::isCommentSign(currentChar) || find("/*")); 
+		//std::cout << ((find("#") || find("/*"))?"Found comment on " + sourcePosition.toString() + "\n": "");
+		return (find("#") || find("/*")); 
 	}
 
 	Token getComment (){
 		std::string buffer;
-		while (!Alphabet::isNewline(currentChar)){
+		while (!Alphabet::isNewline(currentChar) && !Alphabet::isEof(currentChar)){
 			buffer += currentChar;
 			consume();
 		}
@@ -99,9 +100,9 @@ protected:
 			buffer = "0x";
 				consume();
 				if (!Alphabet::isHexadecimalDigit(currentChar)){
-					throw ParserException("Hexadecimal not recognized " + startPosition.toString());
+					throw ParserException("Hexadecimal not recognized " + startPosition.toString() + "\n");
 				}
-				while (Alphabet::isHexadecimalDigit(currentChar) || currentChar == '_' || currentChar == '.'){
+				while (Alphabet::isHexadecimalDigit(currentChar) || currentChar == '_' || currentChar == '.' && !find("..")){
 					if (currentChar == '.'){
 						isFloat = true;
 					}
@@ -128,9 +129,9 @@ protected:
 				buffer = "0b";
 				consume();
 				if (!Alphabet::isBinaryDigit(currentChar)){
-					throw ParserException("Binary not recognized " + startPosition.toString());
+					throw ParserException("Binar not recognized " + startPosition.toString()  + "\n");
 				}
-				while (Alphabet::isBinaryDigit(currentChar) || currentChar == '_' || currentChar == '.'){
+				while (Alphabet::isBinaryDigit(currentChar) || currentChar == '_' || currentChar == '.' && !find("..")){
 					if (currentChar == '.'){
 						isFloat = true;
 					}
@@ -155,7 +156,7 @@ protected:
 
 		if (zeroFound){
 			buffer = "0";
-			while (Alphabet::isOctalDigit(currentChar)|| currentChar == '_' || currentChar == '.'){
+			while (Alphabet::isOctalDigit(currentChar)|| currentChar == '_' || currentChar == '.' && !find("..")){
 					if (currentChar == '.'){
 						isFloat = true;
 					}
@@ -177,7 +178,7 @@ protected:
 		std::string buffer;
 		bool isFloat = false;
 		if (Alphabet::isDigit(currentChar)){
-			while (Alphabet::isDigit(currentChar)|| currentChar == '_' || currentChar == '.'){
+			while (Alphabet::isDigit(currentChar)|| currentChar == '_' || currentChar == '.' && !find("..")){
 				if (currentChar == '.'){
 							isFloat = true;
 						}
@@ -195,8 +196,6 @@ protected:
 
 		return makeToken(Token::NONE);
 	}
-
-
 
 	Token tryAndGetNumeric(){
 		Token numeric;
@@ -247,37 +246,37 @@ protected:
 							++whitespaceCount;
 							consume();
 						}
+
+						if (whitespaceCount % WS_IN_TAB == 0 && whitespaceCount != 0){
+							++tabCount;
+						}
+
 						if (Alphabet::isTab(currentChar)){
 							++tabCount;
 							whitespaceCount = 0;
 							consume();
 						}
-						if (whitespaceCount % WS_IN_TAB == 0){
-							++tabCount;
-						}
+						
 					}
 				}	
+
+				if (!tryComment()  && isNewBlock(tabCount)){
+					{
+					//std::cout << "tried comment"  << tryComment() << "\n";
+				        return makeToken(Token::BLOCK_BEGIN, "");
+				    }
+				}
+				
+				if (!tryComment() && isOldBlock(tabCount)){
+
+				        return makeToken(Token::BLOCK_END, "");
+				 }
 
 				while (Alphabet::isWhitespace(currentChar)){
 					consume();
 				}
 				
 
-				if (!tryComment() && isNewBlock(tabCount)){
-				        return makeToken(Token::BLOCK_BEGIN, "");
-				}
-				
-				if (!tryComment() && isOldBlock(tabCount)){
-				        return makeToken(Token::BLOCK_END, "");
-				 }
-
-				if (isNewBlock(tabCount)) {
-					return makeToken(Token::BLOCK_BEGIN, "");
-				}
-				
-				if (isOldBlock(tabCount)) {
-					return makeToken(Token::BLOCK_END, "");
-				}
 			}
 
 			while (Alphabet::isWhitespace(currentChar)){

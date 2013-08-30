@@ -43,7 +43,7 @@ class Lexer: public SymbolTokens{
 			currentToken = getNextToken();
 		}
 		while (currentToken != makeToken(Token::END, ""));
-		std::cout << "ii";
+		//std::cout << "kk";
 		freeBlocksStack();
 		tokenList.push_back(currentToken);
 	}

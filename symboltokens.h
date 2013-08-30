@@ -268,7 +268,8 @@ protected:
 					}
 					else{
 						if (!Alphabet::isAcceptableCharacter(currentChar)){
-							throw ParserException(std::string("Unknown character ") + currentChar + '\n');
+							throw ParserException(std::string("Unknown character ") + currentChar + "on " 
+								+ sourcePosition.toString() + "\n" );
 						}
 					}
 
