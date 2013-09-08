@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "parser.h"
 #include "common_header.h"
 
 
@@ -18,6 +19,15 @@ int main (){
 		for (auto currentToken: list){
 			out << currentToken;
 		}
+		out.close();
+		Parser parser(list);
+		try {
+			parser.parse();
+		}
+		catch (RecognitionException& re){
+			std::cerr << re.what() << '\n';
+		}
+		
 
 	}
 	catch ( ParserException& e ) {

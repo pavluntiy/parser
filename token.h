@@ -91,9 +91,9 @@ public:
 	{
 	}*/
 
-	Token (){
-		
-	}
+
+	Token(TokenType type = NONE, std::string text = ""): type(type), text(std::string(text))
+	{}
 
 	Token (TokenType type, char* text, Position position): type(type), text(std::string(text)), position(position)
 	{
@@ -129,5 +129,7 @@ std::ofstream& operator<< (std::ofstream &out, Token &currentToken){
 	out << ")\n";
 	return out;
 } 
+
+typedef std::vector<Token> Tokenstream;
 #endif
 
