@@ -32,7 +32,12 @@ protected:
 
 	void consume(){
 	++position;
-	currentToken = ts[position];
+	if(position < ts.size()){
+		currentToken = ts[position];
+	}
+	else {
+		currentToken = Token(Token::END);
+	}
 }
 
 void move(){
@@ -40,8 +45,48 @@ void move(){
 	currentToken = ts[position];
 }
 
-void tryArg(){
+void tryOperand(){
+	std::cout << "entered operand\n";
+	try {
+
 		mark();
+		std::cout << "trying function in operand\n";
+		tryFunc();	
+		std::cout << "found function in operand\n";
+		std::cout << "Now on " << position  << " we have " << currentToken.typeToText()<< " in oper\n";
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+		std::cout << "failed function in operand\n";
+	}
+
+	try {
+		mark();
+		tryArg();	
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	try {
+		mark();
+		tryList();	
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+
+
+
+
+	throw RecognitionException();
+	
+}
+void tryArg(){
 
 		if(	currentToken.getType() == Token::NAME || 
 			currentToken.getType() == Token::INT ||
@@ -55,22 +100,25 @@ void tryArg(){
 			consume();
 			return;
 		}
-		else {
-			release();
-		}
 
 		throw RecognitionException();
 }
 
 
-void tryOperation(){
-
-		//std::cout << "operation\n";
+void tryOperation(std::string text = ""){
+	if(text == ""){
 		if(currentToken.getType() == Token::OPERATOR){
 			consume();
 			return;
 		}	
-		throw RecognitionException();
+	}
+	else {
+		if(currentToken.getType() == Token::OPERATOR && currentToken.getText() == text){
+			consume();
+			return;
+		}	
+	}
+	throw RecognitionException();
 }
 
 
@@ -131,7 +179,7 @@ void tryEnum (){
 
 	try {
 		mark();
-		tryArg();
+		tryOperand();
 		tryEnum();
 		return;
 	}
@@ -177,48 +225,70 @@ void tryEnum (){
 
 }
 
+int magic;
 void tryExpr (){
 
-		try {
-			mark();
-			tryArg();
-			tryOperation();
-			tryArg();
-
-			return;
-		}
-		catch(RecognitionException re){
-			release();
-		}
-
-		
 		try{
 			mark();
-			tryOperation(); 
-			tryExpr();
-			return;
-		}
-		catch(RecognitionException re){
-			release();
-		}
-
-
-		try{
-			mark();
-			tryArg();
+			std::cout << "entering var 1 with: " << currentToken.typeToText() << "\n";
+			magic = 20;
+			std::cout << "trying " << currentToken.typeToText() <<  " as operand\n";
+			tryOperand();
+			std::cout << "found operand var1\n";
 			tryOperation();
+			std::cout << "found operation var1\n";
+			magic = 10;
 			tryExpr();
-
+			magic = 20;
+			std::cout << "var 1\n";
+			std::cout << position  << currentToken.typeToText()<< " in expr\n";
 			return;
 		}
 		catch(RecognitionException re){	
 			release();	
 		}
 
+		try {
+			std::cout << "entering var 2 with: " << currentToken.typeToText() << "\n";
+			magic = 20;
+			std::cout << "trying " << currentToken.typeToText() <<  " as operand\n";
+			tryOperand();
+			std::cout << "found operand var2\n";
+			tryOperation();
+			std::cout << "found operation var2\n";
+			std::cout << "trying " << currentToken.typeToText() <<  " as second operand\n";
+			tryOperand();
+			std::cout << "found second operand var2\n";;
+			std::cout << magic << " var 2\n";
+
+			return;
+		}
+		catch(RecognitionException re){
+			release();
+		}
+
+
+
 		
 		try{
 			mark();
-			tryArg();
+			std::cout << position << "!!!!!!";
+			tryOperation(); 
+			std::cout << position << "asdf";
+			tryOperand();
+			std::cout << "var 3\n";
+			return;
+		}
+		catch(RecognitionException re){
+			release();
+		}
+
+		
+		try{
+			mark();
+			tryOperand();
+			std::cout << "var 4\n";
+				std::cout << position  << currentToken.typeToText()<< " in expr\n";
 			return;
 		}
 		catch(RecognitionException re){	
@@ -230,22 +300,226 @@ void tryExpr (){
 
 }
 
+void tryIdle(){
+	return;
+}
+
+void tryName(){
+	if(currentToken == Token(Token::NAME)){
+		consume();
+		return;	
+	}
+
+	throw RecognitionException();
+}
+
+void tryNameList(){
+	try {
+		mark();
+		tryName();
+		tryNameList();
+		//std::cout << position << '\n';
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
 
 
+	try {
+		mark();
+		tryName();
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
 
+	
+	throw RecognitionException();
+}
+
+void tryFuncCall(){
+
+	try {
+
+		mark();
+		tryNameList();
+		std::cout << "trying namelist with :=\n";
+		tryOperation(":=");
+		std::cout << "found namelist with :=\n";
+		tryArg();
+		std::cout << "found arg\n";
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	try {
+		mark();
+		std::cout << "trying namelist\n";
+		tryNameList();
+		std::cout << "found namelist\n";
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	
+
+	throw RecognitionException();
+
+}
+
+void trySemicolon(){
+	if(currentToken.getType() == Token::SEMICOLON){
+		consume();
+		return;	
+	}
+
+	throw RecognitionException();
+}
+
+void tryNewBlock(){
+	if(currentToken.getType() == Token::BLOCK_BEGIN){
+		consume();
+		return;	
+	}
+
+	throw RecognitionException();
+
+}
+
+void tryFuncDecl(){
+	try {
+		mark();
+		tryName();
+		tryName();
+		tryBraceLeft();
+		tryFuncCall();
+		tryBraceRight();
+		tryOperation(":");
+		tryNewBlock();
+		
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	try {
+		mark();
+		tryName();
+		tryName();
+		tryBraceLeft();
+		tryFuncCall();
+		tryBraceRight();
+		trySemicolon();
+		
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	throw RecognitionException();
+}
+
+
+void tryFunc(){
+	try {
+		mark();
+		tryName();
+		tryBraceLeft();
+		tryFuncCall();
+				std::cout <<position << " ololo!\n";
+				std::cout << currentToken.typeToText();
+		tryBraceRight();
+		std::cout << currentToken.typeToText() << "??\n";
+		
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+	try {
+		mark();
+		tryName();
+		tryBraceLeft();
+		tryBraceRight();
+		return;
+	}
+	catch (RecognitionException re){
+		release();
+	}
+
+
+	throw RecognitionException();
+}
 
 void tryAlternatives(){
 
 	if(currentToken == Token(Token::BEGIN)){
 		consume();
+		return;
 	}
+
+	if(currentToken == Token(Token::BLOCK_END)){
+		consume();
+		return;
+	}
+
+	if(currentToken == Token(Token::END)){
+		consume();
+		return;
+	}
+
+	if(currentToken == Token(Token::COMMENT)){
+		consume();
+		return;
+	}
+
 	try {
-		tryExpr();
-		std::cout << "expression on " << position << "\n";
+		tryFuncDecl();
+		std::cout << "funcdecl on " << position << "\n";
 		return;
 	}
 	catch (RecognitionException re){
 	}
+
+	try {
+		tryFunc();
+		std::cout << "func call on " << position << "\n";
+		return;
+	}
+	catch (RecognitionException re){
+	}
+
+
+
+
+	try {
+		std::cout << "entering expression\n";
+		tryExpr();
+		std::cout << "expression on " << position << "\n";
+		std::cout << currentToken.typeToText();
+		return;
+	}
+	catch (RecognitionException re){
+	}
+
+	try {
+		tryNameList();
+		std::cout << "Name List on " << position << "\n";
+		return;
+	}
+		catch (RecognitionException re){
+	}
+
+
 
 
 	try {
@@ -255,6 +529,10 @@ void tryAlternatives(){
 	}
 	catch (RecognitionException re){
 	}
+
+
+
+
 
 
 	throw RecognitionException(std::string ("Not recognized token ") + currentToken.typeToText() + " " 
